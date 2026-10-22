@@ -1,0 +1,65 @@
+// IceFinder data model — SQLite for zero-config local dev.
+// Swap provider to "postgresql" (Supabase) for production; schema is portable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Facility {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique // 'rosemary-brown' | 'kensington' | 'bill-copeland' | 'scotia-barn'
+  municipality    String       @default("Burnaby")
+  address         String
+  lat             Float
+  lng             Float
+  bookingPlatform String       @map("booking_platform") // 'activenet' | 'canlan'
+  sessions        IceSession[]
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  @@map("facilities")
+}
+
+model IceSession {
+  // Composite dedupe key: `${facility_slug}|${startTime ISO}|${category}`
+  id                String   @id
+  facilityId        String   @map("facility_id")
+  facility          Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  rawTitle          String   @map("raw_title")
+  category          String // 'public_skate' | 'hockey_dropin' | 'stick_and_puck' | 'figure_buyon'
+  rink              String? // e.g. "Rink 1"
+  startTime         DateTime @map("start_time")
+  endTime           DateTime @map("end_time")
+  totalSpots        Int      @map("total_spots")
+  openSpots         Int      @map("open_spots")
+  waitlistCount     Int      @default(0) @map("waitlist_count")
+  isGoalieFree      Boolean  @default(false) @map("is_goalie_free")
+  goalieSpots       Int?     @map("goalie_spots") // capacity of the goalie roster, when published
+  goaliesRegistered Int?     @map("goalies_registered")
+  cost              Float?
+  bookingUrl        String   @map("booking_url")
+  source            String   @default("live") // 'live' | 'mock'
+  externalId        String?  @map("external_id")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  @@index([startTime])
+  @@index([facilityId, startTime])
+  @@map("ice_sessions")
+}
+
+model SyncRun {
+  id         Int      @id @default(autoincrement())
+  startedAt  DateTime @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  status     String // 'ok' | 'partial' | 'failed'
+  upserted   Int      @default(0)
+  log        String   @default("")
+
+  @@map("sync_runs")
+}

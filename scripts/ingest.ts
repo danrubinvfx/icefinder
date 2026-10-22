@@ -1,0 +1,61 @@
+#!/usr/bin/env -S npx tsx
+/**
+ * IceFinder ingestion CLI.
+ *
+ *   npx tsx scripts/ingest.ts                 # live, with per-rink mock fallback (default)
+ *   npx tsx scripts/ingest.ts --mock          # mock data only (offline demo)
+ *   npx tsx scripts/ingest.ts --live          # live only; failing rinks are logged + skipped
+ *   npx tsx scripts/ingest.ts --days 10       # look-ahead window (default 8)
+ *   npx tsx scripts/ingest.ts --only scotia-barn,kensington
+ *   npx tsx scripts/ingest.ts --watch 15      # long-running: re-sync every 15 minutes
+ */
+import { PrismaClient } from "@prisma/client";
+import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
+
+function arg(name: string): string | undefined {
+  const i = process.argv.indexOf(`--${name}`);
+  if (i === -1) return undefined;
+  const next = process.argv[i + 1];
+  return next && !next.startsWith("--") ? next : "";
+}
+
+const opts: IngestOptions = {
+  mode: arg("mock") !== undefined ? "mock" : arg("live") !== undefined ? "live" : "auto",
+  days: Number(arg("days") || 8),
+  only: arg("only")?.split(",").filter(Boolean),
+};
+const watch = arg("watch");
+const intervalMin = watch !== undefined ? Number(watch || 15) : 0;
+
+const prisma = new PrismaClient();
+
+async function once() {
+  try {
+    const report = await runIngestion(prisma, opts);
+    console.table(report.results.map(({ error, ...r }) => ({ ...r, error: error?.slice(0, 60) ?? "" })));
+    return report.status;
+  } catch (err) {
+    console.error("Fatal ingest error:", err);
+    return "failed" as const;
+  }
+}
+
+async function main() {
+  if (!intervalMin) {
+    const status = await once();
+    await prisma.$disconnect();
+    process.exit(status === "failed" ? 1 : 0);
+  }
+  console.log(`Watch mode: syncing every ${intervalMin} min. Ctrl+C to stop.`);
+  for (;;) {
+    await once();
+    await new Promise((r) => setTimeout(r, intervalMin * 60_000));
+  }
+}
+
+process.on("SIGINT", async () => {
+  await prisma.$disconnect();
+  process.exit(0);
+});
+
+main();
