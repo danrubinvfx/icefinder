@@ -104,6 +104,8 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
   const dateInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const [toast, setToast] = useState<string | null>(null);
+
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -123,6 +125,43 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       setNow(Date.now());
     }
   }, [router]);
+
+  const handleManualRefresh = useCallback(async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      const syncRes = await fetch("/api/sync/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(120_000),
+      });
+      const data = await syncRes.json();
+      if (data.status === "cached") {
+        setToast("Already up to date");
+      } else if (data.status === "refreshed") {
+        setToast("Live sweep complete");
+      }
+      setTimeout(() => setToast(null), 2500);
+
+      // Re-fetch sessions to update UI
+      const res = await fetch("/api/sessions", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const nextFeed = await res.json();
+        setFeed(nextFeed);
+      }
+      router.refresh();
+    } catch (err) {
+      console.warn("Manual refresh failed:", err);
+      setToast("Refresh failed");
+      setTimeout(() => setToast(null), 2500);
+    } finally {
+      setRefreshing(false);
+      setNow(Date.now());
+    }
+  }, [refreshing, router]);
 
   useEffect(() => {
     setNow(Date.now());
@@ -340,31 +379,43 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           <div className="flex-1" />
 
           {/* Refresh / sync button */}
-          <button
-            type="button"
-            onClick={refresh}
-            disabled={refreshing}
-            title={lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
-            aria-label="Refresh feed"
-            className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500"
-          >
-            <span
-              className={`size-2 rounded-full ${
-                syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-400"
-              }`}
-              aria-hidden
-            />
-            <span className="tabular-nums" suppressHydrationWarning>
-              {lastSyncAt ? (
-                <>
-                  <span className="hidden min-[400px]:inline">Live · </span>synced {formatTime(lastSyncAt)}
-                </>
-              ) : (
-                "Awaiting first sync"
-              )}
-            </span>
-            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} aria-hidden />
-          </button>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              title={lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
+              aria-label="Refresh feed"
+              className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer disabled:cursor-not-allowed"
+            >
+              <span
+                className={`size-2 rounded-full ${
+                  refreshing ? "bg-ice-500 animate-pulse" : syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-400"
+                }`}
+                aria-hidden
+              />
+              <span className="tabular-nums" suppressHydrationWarning>
+                {refreshing ? (
+                  "Checking live ice..."
+                ) : lastSyncAt ? (
+                  <>
+                    <span className="hidden min-[400px]:inline">Live · </span>synced {formatTime(lastSyncAt)}
+                  </>
+                ) : (
+                  "Awaiting first sync"
+                )}
+              </span>
+              <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-ice-600" : ""}`} aria-hidden />
+            </button>
+            {toast && (
+              <div
+                role="status"
+                className="pointer-events-none absolute right-0 top-full mt-1.5 z-30 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg transition-all animate-in fade-in"
+              >
+                {toast}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Municipality Filter Ribbon */}
