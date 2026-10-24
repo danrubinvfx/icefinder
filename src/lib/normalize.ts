@@ -19,8 +19,8 @@ export function normalizeCategory(rawTitle: string): Category | null {
     .replace(/\(goalie\)/g, "")
     .trim();
 
-  // Exclusions first: lessons, programs, leagues and non-target sports.
-  if (/\b(lesson|blades|camp|clinic|league|ringette|floor hockey|ball hockey|intro to hockey|learn to)\b/.test(t)) {
+  // Exclusions first: lessons, programs, leagues, private rentals, and non-target sports.
+  if (/\b(lesson|blades|camp|clinic|league|ringette|floor hockey|ball hockey|intro to hockey|learn to|package|party|birthday|rental)\b/.test(t)) {
     return null;
   }
 

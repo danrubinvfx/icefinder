@@ -3,13 +3,14 @@ import { prisma } from "./db";
 import { FACILITIES, FACILITY_SHORT_NAME, type Category } from "./domain";
 import { mockSessionsFor, publicSkateScheduleFor } from "./ingest/mock";
 import { sessionKey } from "./normalize";
-import { resolveBookingUrl, getBurnabyFallbackUrl } from "./links";
+import { resolveBookingUrl } from "./links";
 
 export interface SessionDTO {
   id: string;
   facilitySlug: string;
   facilityName: string;
   facilityShort: string;
+  municipality: string;
   bookingPlatform: string;
   rawTitle: string;
   category: Category;
@@ -34,6 +35,7 @@ export interface FacilityDTO {
   slug: string;
   name: string;
   shortName: string;
+  municipality: string;
   address: string;
   lat: number;
   lng: number;
@@ -49,7 +51,7 @@ export interface FeedPayload {
 /**
  * Generate fallback data when database is unavailable (e.g. read-only serverless environment
  * on Vercel without persistent SQLite storage, or unseeded DB on cold start).
- * Guarantees the site renders all 4 Burnaby facilities with full schedule rosters.
+ * Guarantees the site renders all Metro Vancouver facilities with full schedule rosters.
  */
 export function getFallbackFeed(now = Date.now()): FeedPayload {
   const window = {
@@ -63,7 +65,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
   for (const facility of FACILITIES) {
     const mock = mockSessionsFor(facility, window);
     const schedule = publicSkateScheduleFor(facility, window);
-    
+
     // Combine mock drop-ins with published public skate timetable
     const combined = [...mock, ...schedule];
     for (const s of combined) {
@@ -73,6 +75,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         facilitySlug: s.facilitySlug,
         facilityName: fac.name,
         facilityShort: fac.shortName,
+        municipality: fac.municipality,
         bookingPlatform: fac.bookingPlatform,
         rawTitle: s.rawTitle,
         category: s.category,
@@ -86,7 +89,16 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         goalieSpots: s.goalieSpots,
         goaliesRegistered: s.goaliesRegistered,
         cost: s.cost,
-        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category, s.facilitySlug),
+        bookingUrl: resolveBookingUrl({
+          bookingUrl: s.bookingUrl,
+          category: s.category,
+          bookingPlatform: fac.bookingPlatform,
+          facilitySlug: fac.slug,
+          municipality: fac.municipality,
+          activityId: s.activityId,
+          externalId: s.externalId,
+          source: s.source,
+        }),
         source: s.source,
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
@@ -110,6 +122,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
       slug: f.slug,
       name: f.name,
       shortName: f.shortName,
+      municipality: f.municipality,
       address: f.address,
       lat: f.lat,
       lng: f.lng,
@@ -151,6 +164,7 @@ export async function getFeed(): Promise<FeedPayload> {
           facilitySlug: r.facility.slug,
           facilityName: r.facility.name,
           facilityShort: FACILITY_SHORT_NAME[r.facility.slug] ?? r.facility.name,
+          municipality: r.facility.municipality,
           bookingPlatform: r.facility.bookingPlatform,
           rawTitle: r.rawTitle,
           category: r.category as Category,
@@ -171,6 +185,7 @@ export async function getFeed(): Promise<FeedPayload> {
             activityId: r.activityId,
             externalId: r.externalId,
             facilitySlug: r.facility.slug,
+            municipality: r.facility.municipality,
             source: r.source,
           }),
           source: r.source,
@@ -182,6 +197,7 @@ export async function getFeed(): Promise<FeedPayload> {
           slug: f.slug,
           name: f.name,
           shortName: FACILITY_SHORT_NAME[f.slug] ?? f.name,
+          municipality: f.municipality,
           address: f.address,
           lat: f.lat,
           lng: f.lng,
@@ -192,10 +208,9 @@ export async function getFeed(): Promise<FeedPayload> {
     }
 
     // Database connected but tables are empty (unseeded) -> fallback to pre-seeded dataset
-    console.warn("[IceFinder] Database tables empty. Falling back to pre-seeded Burnaby roster.");
+    console.warn("[IceFinder] Database tables empty. Falling back to pre-seeded roster.");
     return getFallbackFeed(now);
   } catch (error) {
-    // Database connection failed (e.g. SQLite file missing on Vercel serverless worker)
     console.warn("[IceFinder] Database query failed on serverless worker. Using resilient fallback feed.", (error as Error).message);
     return getFallbackFeed(now);
   }

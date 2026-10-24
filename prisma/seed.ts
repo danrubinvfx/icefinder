@@ -26,7 +26,7 @@ async function main() {
       },
     });
   }
-  console.log(`Seeded ${FACILITIES.length} Burnaby facilities.`);
+  console.log(`Seeded ${FACILITIES.length} facilities across Metro Vancouver.`);
 }
 
 main()

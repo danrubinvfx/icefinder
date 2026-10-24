@@ -8,6 +8,8 @@
 import type { PrismaClient } from "@prisma/client";
 import { FACILITIES, type FacilitySeed } from "../domain";
 import { collectActiveNet, resetActiveNetCache } from "./activenet";
+import { collectVancouver, resetVancouverCache } from "./vancouver";
+import { collectPerfectMind, resetPerfectMindCache } from "./perfectmind";
 import { collectCanlan } from "./canlan";
 import { mockSessionsFor, publicSkateScheduleFor } from "./mock";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -44,7 +46,10 @@ const consoleLogger: IngestLogger = {
 };
 
 function collectorFor(f: FacilitySeed) {
-  return f.bookingPlatform === "activenet" ? collectActiveNet : collectCanlan;
+  if (f.bookingPlatform === "canlan") return collectCanlan;
+  if (f.bookingPlatform === "perfectmind") return collectPerfectMind;
+  if (f.municipality === "Vancouver") return collectVancouver;
+  return collectActiveNet;
 }
 
 /** Merge lists; earlier lists win on key collisions (live > schedule). */
@@ -67,6 +72,8 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
     to: new Date(startedAt.getTime() + opts.days * 86_400_000),
   };
   resetActiveNetCache();
+  resetVancouverCache();
+  resetPerfectMindCache();
 
   const run = await prisma.syncRun.create({ data: { status: "running" } });
   const lines: string[] = [];

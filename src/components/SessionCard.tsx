@@ -66,6 +66,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     activityId: s.activityId,
     externalId: s.externalId,
     facilitySlug: s.facilitySlug,
+    municipality: s.municipality,
     source: s.source,
   });
 

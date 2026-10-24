@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2 } from "lucide-react";
-import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/domain";
+import { CATEGORIES, CATEGORY_LABELS, MUNICIPALITIES, type Category, type Municipality } from "@/lib/domain";
 import type { FeedPayload, SessionDTO } from "@/lib/queries";
 import {
   addDaysYmd,
@@ -23,13 +23,6 @@ type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
 type CategoryFilter = "all" | Category;
 
 const REFRESH_MS = 60_000;
-const LOCATIONS = [
-  { value: "burnaby", label: "Burnaby, BC", enabled: true },
-  { value: "vancouver", label: "Vancouver, BC (soon)", enabled: false },
-  { value: "coquitlam", label: "Coquitlam, BC (soon)", enabled: false },
-  { value: "richmond", label: "Richmond, BC (soon)", enabled: false },
-  { value: "north-van", label: "North Vancouver, BC (soon)", enabled: false },
-];
 
 function Pill({
   active,
@@ -101,6 +94,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
   const [now, setNow] = useState(() => new Date(initialFeed.generatedAt).getTime());
   const [refreshing, setRefreshing] = useState(false);
 
+  const [municipality, setMunicipality] = useState<Municipality>("All Metro Van");
   const [dateMode, setDateMode] = useState<DateMode>("today");
   const [pickedDate, setPickedDate] = useState<string>("");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -167,35 +161,80 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
     [feed.sessions],
   );
 
+  const availableFacilities = useMemo(() => {
+    if (municipality === "All Metro Van") return feed.facilities;
+    return feed.facilities.filter((f) => f.municipality === municipality);
+  }, [feed.facilities, municipality]);
+
+  // If active facility is not in current municipality, reset facility to "all"
+  useEffect(() => {
+    if (facility !== "all" && !availableFacilities.some((f) => f.slug === facility)) {
+      setFacility("all");
+    }
+  }, [municipality, facility, availableFacilities]);
+
+  const municipalityCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of MUNICIPALITIES) counts[m] = 0;
+    const days = new Set(selectedDays);
+    for (const { s, day, endMs } of indexed) {
+      if (days.has(day) && endMs > now) {
+        counts["All Metro Van"] = (counts["All Metro Van"] || 0) + 1;
+        if (s.municipality && counts[s.municipality] !== undefined) {
+          counts[s.municipality]++;
+        }
+      }
+    }
+    return counts;
+  }, [indexed, selectedDays, now]);
+
   const baseFiltered = useMemo(() => {
     const days = new Set(selectedDays);
     return indexed.filter(
       ({ s, day, endMs }) =>
         days.has(day) &&
         endMs > now &&
+        (municipality === "All Metro Van" || s.municipality === municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
         (!goalieOnly || goalieNeeded(s)),
     );
-  }, [indexed, selectedDays, now, facility, openOnly, goalieOnly]);
+  }, [indexed, selectedDays, now, municipality, facility, openOnly, goalieOnly]);
 
   const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: baseFiltered.length };
+    const counts: Record<string, number> = { all: 0 };
     for (const c of CATEGORIES) counts[c] = 0;
-    for (const { s } of baseFiltered) counts[s.category]++;
+    const days = new Set(selectedDays);
+    for (const { s, day, endMs } of indexed) {
+      if (
+        days.has(day) &&
+        endMs > now &&
+        (municipality === "All Metro Van" || s.municipality === municipality) &&
+        (facility === "all" || s.facilitySlug === facility) &&
+        (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
+        (!goalieOnly || goalieNeeded(s))
+      ) {
+        counts.all++;
+        counts[s.category] = (counts[s.category] ?? 0) + 1;
+      }
+    }
     return counts;
-  }, [baseFiltered]);
+  }, [indexed, selectedDays, now, municipality, facility, openOnly, goalieOnly]);
 
-  const visible = useMemo(
-    () => baseFiltered.filter(({ s }) => category === "all" || s.category === category),
-    [baseFiltered, category],
-  );
+  const visible = useMemo(() => {
+    return baseFiltered.filter(({ s }) => {
+      if (category !== "all" && s.category !== category) return false;
+      return true;
+    });
+  }, [baseFiltered, category]);
 
+  // Group visible sessions by local date (YYYY-MM-DD)
   const groups = useMemo(() => {
     const map = new Map<string, SessionDTO[]>();
     for (const { s, day } of visible) {
-      if (!map.has(day)) map.set(day, []);
-      map.get(day)!.push(s);
+      const list = map.get(day);
+      if (list) list.push(s);
+      else map.set(day, [s]);
     }
     // Sort each day block: strictly chronological, prioritizing figure_buyon when start times match
     for (const list of map.values()) {
@@ -241,6 +280,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       : "Pick Date";
 
   const resetFilters = () => {
+    setMunicipality("All Metro Van");
     setCategory("all");
     setOpenOnly(false);
     setGoalieOnly(false);
@@ -278,14 +318,18 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           <div className="hidden items-center gap-1.5 text-sm sm:flex">
             <MapPin className="size-4 text-ice-600" aria-hidden />
             <label className="relative">
-              <span className="sr-only">Location</span>
+              <span className="sr-only">Municipality</span>
               <select
-                defaultValue="burnaby"
+                value={municipality}
+                onChange={(e) => {
+                  setMunicipality(e.target.value as Municipality);
+                  setFacility("all");
+                }}
                 className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none"
               >
-                {LOCATIONS.map((l) => (
-                  <option key={l.value} value={l.value} disabled={!l.enabled}>
-                    {l.label}
+                {MUNICIPALITIES.map((m) => (
+                  <option key={m} value={m}>
+                    {m === "All Metro Van" ? "All Metro Vancouver" : `${m}, BC`}
                   </option>
                 ))}
               </select>
@@ -323,24 +367,22 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           </button>
         </div>
 
-        {/* Mobile location row */}
-        <div className="flex items-center gap-1.5 px-4 pb-2 text-sm sm:hidden">
-          <MapPin className="size-4 text-ice-600" aria-hidden />
-          <label className="relative">
-            <span className="sr-only">Location</span>
-            <select
-              defaultValue="burnaby"
-              className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none"
+        {/* Municipality Filter Ribbon */}
+        <nav aria-label="Municipality" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
+          {MUNICIPALITIES.map((m) => (
+            <Pill
+              key={m}
+              active={municipality === m}
+              onClick={() => {
+                setMunicipality(m);
+                setFacility("all");
+              }}
+              count={municipalityCounts[m]}
             >
-              {LOCATIONS.map((l) => (
-                <option key={l.value} value={l.value} disabled={!l.enabled}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
-          </label>
-        </div>
+              {m}
+            </Pill>
+          ))}
+        </nav>
 
         {/* Date / Timeframe pills */}
         <nav aria-label="Timeframe" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
@@ -393,7 +435,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           ))}
         </nav>
 
-        {/* Toggles + facility */}
+        {/* Toggles + facility dropdown */}
         <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 pb-3">
           <Toggle checked={openOnly} onChange={setOpenOnly} label="Open Spots Only" />
           <Toggle
@@ -410,8 +452,10 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
               onChange={(e) => setFacility(e.target.value)}
               className="h-9 appearance-none rounded-full bg-white pl-9 pr-8 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ice-500"
             >
-              <option value="all">All arenas</option>
-              {feed.facilities.map((f) => (
+              <option value="all">
+                {municipality === "All Metro Van" ? "All arenas" : `All ${municipality} arenas`}
+              </option>
+              {availableFacilities.map((f) => (
                 <option key={f.slug} value={f.slug}>
                   {f.shortName}
                 </option>
@@ -428,35 +472,26 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
         {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (
           <div className="sticky top-14 z-10 -mx-4 border-b border-slate-200/80 bg-slate-50/95 px-4 py-2 backdrop-blur">
             <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
-              <span className="shrink-0 pr-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
                 Jump to:
               </span>
               {selectedDays.map((d) => {
+                const dayDate = new Date(`${d}T12:00:00Z`);
+                const isCurrentToday = d === today;
                 const count = dayCounts[d] ?? 0;
-                const dObj = new Date(`${d}T12:00:00Z`);
-                const isToday = d === today;
                 return (
                   <button
                     key={d}
                     type="button"
                     onClick={() => scrollToDay(d)}
-                    disabled={count === 0}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
-                      count > 0
-                        ? "border-slate-200 bg-white text-slate-800 shadow-2xs hover:border-ice-400 hover:bg-ice-50/60 active:scale-95"
-                        : "border-slate-100 bg-slate-100/60 text-slate-400 opacity-60 cursor-not-allowed"
-                    }`}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 hover:text-ice-600 transition"
                   >
-                    <span className="text-[11px] font-bold uppercase text-slate-500">{shortDow(dObj)}</span>
-                    <span className="font-bold tabular-nums text-slate-900">{formatDayNumber(dObj)}</span>
-                    {isToday && (
-                      <span className="rounded-full bg-ice-100 px-1 text-[10px] font-bold text-ice-700">Today</span>
+                    <span>{shortDow(dayDate)}</span>
+                    <span className="font-bold">{formatDayNumber(dayDate)}</span>
+                    {isCurrentToday && (
+                      <span className="text-[10px] uppercase font-bold text-ice-600 ml-0.5">· today</span>
                     )}
-                    <span
-                      className={`min-w-4 rounded-full px-1 text-center text-[10px] font-bold tabular-nums ${
-                        count > 0 ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-500"
-                      }`}
-                    >
+                    <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.2 text-[10px] text-slate-500 tabular-nums">
                       {count}
                     </span>
                   </button>
@@ -466,22 +501,16 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           </div>
         )}
 
-        <p className="text-xs font-medium text-slate-500" aria-live="polite">
-          {visible.length} session{visible.length === 1 ? "" : "s"}
-          {goalieOnly ? " needing a goalie" : ""} · {feed.facilities.length} Burnaby arenas
-          {dateMode === "week" ? " · Next 7 Days" : dateMode === "3days" ? " · Next 3 Days" : ""}
-        </p>
-
-        {groups.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center">
-            <SearchX className="size-8 text-slate-400" aria-hidden />
-            <p className="font-semibold text-slate-800">No ice matches those filters</p>
-            <p className="max-w-xs text-sm text-slate-500">
+        {visible.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-xs">
+            <SearchX className="mx-auto size-10 text-slate-300" aria-hidden />
+            <h2 className="mt-3 text-base font-bold text-slate-800">No sessions match your filters</h2>
+            <p className="mt-1 text-sm text-slate-500">
               {dateMode === "today"
-                ? "Today's sessions may have already finished for the day. Check the upcoming week or switch filters."
-                : "Try another timeframe, switch arenas, or turn off \u201cOpen Spots Only\u201d."}
+                ? "Today's sessions may have already finished for the day. Check the upcoming week, switch municipality, or clear filters."
+                : "Try widening your date range, switching municipality, or turning off \u201cOpen Spots Only\u201d."}
             </p>
-            <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               {dateMode === "today" && (
                 <button
                   type="button"
@@ -529,9 +558,9 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
         )}
 
         <footer className="pt-6 text-center text-xs leading-relaxed text-slate-400">
-          Data from City of Burnaby WebReg (ActiveNet) and Canlan Sports (DaySmart). Always confirm on the booking
+          Data from Burnaby, Vancouver, Richmond, Coquitlam, Delta & Canlan Sports. Always confirm on the booking
           site. <br />
-          icefinder.ca · Built in Burnaby, BC
+          icefinder.ca · Built for Metro Vancouver skaters
         </footer>
       </main>
     </div>
