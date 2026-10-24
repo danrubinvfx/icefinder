@@ -7,7 +7,10 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { getVancouverDetailUrl, getVancouverFallbackUrl } from "../links";
+import {
+  getVancouverDetailUrl,
+  VANCOUVER_DROPIN_CALENDAR_URL,
+} from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -192,14 +195,9 @@ export async function collectVancouver(
     }
 
     const numericActivityId = typeof item.id === "number" ? item.id : Number(item.id) || null;
-    let directUrl: string;
-    if (category === "public_skate") {
-      directUrl = getVancouverFallbackUrl(category, facility.slug);
-    } else if (numericActivityId) {
-      directUrl = getVancouverDetailUrl(numericActivityId);
-    } else {
-      directUrl = getVancouverFallbackUrl(category, facility.slug);
-    }
+    const directUrl = numericActivityId
+      ? getVancouverDetailUrl(numericActivityId)
+      : VANCOUVER_DROPIN_CALENDAR_URL;
 
     sessions.set(key, {
       facilitySlug: facility.slug,

@@ -146,6 +146,7 @@ export async function collectCanlan(
       cost: null, // Canlan fees are behind the authenticated cart; null per spec when unavailable.
       bookingUrl: canlanBookingUrl(ev.id),
       source: "live",
+      activityId: Number(ev.id) || null,
       externalId: `daysmart:${ev.id}`,
     });
   }

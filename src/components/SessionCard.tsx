@@ -53,12 +53,18 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
   const style = CATEGORY_STYLE[s.category];
   const full = s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
+  const isReservable =
+    s.category === "hockey_dropin" ||
+    s.category === "stick_and_puck" ||
+    s.category === "figure_buyon" ||
+    (s.category === "public_skate" && s.source === "live");
+
   const cta =
     s.bookingPlatform === "canlan"
       ? "Register"
-      : s.category === "public_skate" || s.source === "schedule"
-      ? "View Arena Schedule"
-      : "Book on City Site";
+      : isReservable
+      ? "Book on City Site"
+      : "View Arena Schedule";
   const destinationUrl = resolveBookingUrl({
     bookingUrl: s.bookingUrl,
     category: s.category,
