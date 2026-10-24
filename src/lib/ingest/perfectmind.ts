@@ -138,9 +138,9 @@ export async function collectPerfectMind(
     const calendarId =
       facility.slug === "richmond-ice-centre"
         ? "8bd697eb-ee1e-4067-b6bb-be1901a7753d"
-        : "08c56c84-5ee7-4c81-9d52-d4cfc850aad7";
+        : "6ef4a37b-91d1-432a-a92e-9828e83b4c10";
     const url =
-      "https://richmondcity.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+      "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
     classes = await getPerfectMindClassesCached(url, calendarId, log, `Richmond ${facility.shortName}`);
   } else if (facility.municipality === "Coquitlam") {
     const calendarId = "4f07c977-74de-46ab-9d0a-2397f83f254f";

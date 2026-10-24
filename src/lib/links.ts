@@ -3,15 +3,18 @@ import type { Category } from "./domain";
 export const CANLAN_PROGRAMS_FALLBACK =
   "https://apps.daysmartrecreation.com/dash/x/#/online/canlan/programs?facility_ids=1";
 
-// ── Burnaby ─────────────────────────────────────────────────────────────
-export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
+// ── Burnaby (ActiveNet) ──────────────────────────────────────────────────
+export const BURNABY_FACILITY_URLS: Record<string, string> = {
   "rosemary-brown":
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/rosemary-brown-recreation-centre",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=180&viewMode=list",
   kensington:
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/kensington-complex",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=147&viewMode=list",
   "bill-copeland":
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
 };
+
+// Aliased for backwards compatibility
+export const BURNABY_FACILITY_SCHEDULE_URLS = BURNABY_FACILITY_URLS;
 
 export const BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK =
   "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
@@ -23,8 +26,8 @@ export const BURNABY_HOCKEY_RESERVE_URL =
   "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&viewMode=list";
 
 export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
-  if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
-    return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
+  if (facilitySlug && BURNABY_FACILITY_URLS[facilitySlug]) {
+    return BURNABY_FACILITY_URLS[facilitySlug];
   }
   return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
 }
@@ -37,8 +40,8 @@ export function getBurnabyFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  if (category === "public_skate") {
-    return getBurnabyPublicSkateUrl(facilitySlug);
+  if (facilitySlug && BURNABY_FACILITY_URLS[facilitySlug]) {
+    return BURNABY_FACILITY_URLS[facilitySlug];
   }
   if (category === "figure_buyon") {
     return BURNABY_FIGURE_SKATING_RESERVE_URL;
@@ -46,21 +49,24 @@ export function getBurnabyFallbackUrl(
   if (category === "hockey_dropin" || category === "stick_and_puck") {
     return BURNABY_HOCKEY_RESERVE_URL;
   }
-  return getBurnabyPublicSkateUrl(facilitySlug);
+  return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
 }
 
-// ── Vancouver (ActiveNet) ────────────────────────────────────────────────
-export const VANCOUVER_FACILITY_SCHEDULE_URLS: Record<string, string> = {
-  britannia: "https://vancouver.ca/parks-recreation-culture/britannia-rink.aspx",
-  hillcrest: "https://vancouver.ca/parks-recreation-culture/hillcrest-rink.aspx",
-  kitsilano: "https://vancouver.ca/parks-recreation-culture/kitsilano-rink.aspx",
-  "trout-lake": "https://vancouver.ca/parks-recreation-culture/trout-lake-rink.aspx",
-  sunset: "https://vancouver.ca/parks-recreation-culture/sunset-rink.aspx",
-  killarney: "https://vancouver.ca/parks-recreation-culture/killarney-rink.aspx",
-};
+// ── Vancouver (Park Board ActiveNet) ────────────────────────────────────
+export const VANCOUVER_DROPIN_CALENDAR_URL =
+  "https://anc.ca.apm.activecommunities.com/vancouver/calendars?onlineSiteId=0&no_scroll_top=true&defaultCalendarId=3&displayType=0&view=2";
 
 export const VANCOUVER_SEARCH_FALLBACK =
   "https://anc.ca.apm.activecommunities.com/vancouver/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+
+export const VANCOUVER_FACILITY_SCHEDULE_URLS: Record<string, string> = {
+  britannia: VANCOUVER_DROPIN_CALENDAR_URL,
+  hillcrest: VANCOUVER_DROPIN_CALENDAR_URL,
+  kitsilano: VANCOUVER_DROPIN_CALENDAR_URL,
+  "trout-lake": VANCOUVER_DROPIN_CALENDAR_URL,
+  sunset: VANCOUVER_DROPIN_CALENDAR_URL,
+  killarney: VANCOUVER_DROPIN_CALENDAR_URL,
+};
 
 export function getVancouverDetailUrl(activityId: number | string): string {
   return `https://anc.ca.apm.activecommunities.com/vancouver/activity/search/detail/${activityId}?onlineSiteId=0&from_original_cui=true`;
@@ -70,28 +76,11 @@ export function getVancouverFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  if (facilitySlug && VANCOUVER_FACILITY_SCHEDULE_URLS[facilitySlug]) {
-    return VANCOUVER_FACILITY_SCHEDULE_URLS[facilitySlug];
+  void facilitySlug;
+  if (category === "public_skate") {
+    return VANCOUVER_DROPIN_CALENDAR_URL;
   }
   return VANCOUVER_SEARCH_FALLBACK;
-}
-
-// ── Richmond (PerfectMind) ──────────────────────────────────────────────
-export const RICHMOND_PERFECTMIND_CALENDAR_URL =
-  "https://richmondcity.perfectmind.com/23734/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
-
-export const RICHMOND_FACILITY_URLS: Record<string, string> = {
-  "richmond-ice-centre":
-    "https://richmondcity.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406&calendarId=8bd697eb-ee1e-4067-b6bb-be1901a7753d",
-  minoru:
-    "https://richmondcity.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406&calendarId=08c56c84-5ee7-4c81-9d52-d4cfc850aad7",
-};
-
-export function getRichmondUrl(facilitySlug?: string | null): string {
-  if (facilitySlug && RICHMOND_FACILITY_URLS[facilitySlug]) {
-    return RICHMOND_FACILITY_URLS[facilitySlug];
-  }
-  return RICHMOND_PERFECTMIND_CALENDAR_URL;
 }
 
 // ── Coquitlam (PerfectMind) ─────────────────────────────────────────────
@@ -101,47 +90,70 @@ export const COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL =
 export const COQUITLAM_PERFECTMIND_SKATING_URL =
   COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
 
-export const COQUITLAM_POIRIER_SCHEDULE_FALLBACK =
-  "https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex";
-
 export const COQUITLAM_FACILITY_SCHEDULE_URLS: Record<string, string> = {
-  poirier: COQUITLAM_POIRIER_SCHEDULE_FALLBACK,
+  poirier: COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL,
 };
-
-export function getCoquitlamFallbackUrl(
-  category?: Category | string,
-  facilitySlug?: string | null,
-): string {
-  if (facilitySlug && COQUITLAM_FACILITY_SCHEDULE_URLS[facilitySlug]) {
-    return COQUITLAM_FACILITY_SCHEDULE_URLS[facilitySlug];
-  }
-  return COQUITLAM_POIRIER_SCHEDULE_FALLBACK;
-}
 
 export function getCoquitlamUrl(
   category?: Category | string,
   facilitySlug?: string | null,
   source?: string | null,
 ): string {
-  if (source === "schedule" || (category === "public_skate" && source !== "live")) {
-    return getCoquitlamFallbackUrl(category, facilitySlug);
-  }
+  void category;
+  void facilitySlug;
+  void source;
   return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
 }
 
+export function getCoquitlamFallbackUrl(
+  category?: Category | string,
+  facilitySlug?: string | null,
+): string {
+  void category;
+  void facilitySlug;
+  return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+}
+
+// ── Richmond (PerfectMind) ──────────────────────────────────────────────
+export const RICHMOND_FACILITY_URLS: Record<string, string> = {
+  "richmond-ice-centre":
+    "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=8bd697eb-ee1e-4067-b6bb-be1901a7753d&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False",
+  minoru:
+    "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=6ef4a37b-91d1-432a-a92e-9828e83b4c10&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False",
+};
+
+export const RICHMOND_PERFECTMIND_CALENDAR_URL =
+  RICHMOND_FACILITY_URLS["richmond-ice-centre"];
+
+export function getRichmondUrl(facilitySlug?: string | null): string {
+  if (facilitySlug && RICHMOND_FACILITY_URLS[facilitySlug]) {
+    return RICHMOND_FACILITY_URLS[facilitySlug];
+  }
+  return RICHMOND_PERFECTMIND_CALENDAR_URL;
+}
+
 // ── Delta (PerfectMind) ─────────────────────────────────────────────────
-export const DELTA_ONLINE_REGISTRATION_URL =
-  "https://delta.ca/OnlineRegistration";
-
 export const DELTA_PERFECTMIND_SKATING_CALENDAR_URL =
-  "https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?calendarId=c9b7ca71-56dc-43e3-aec7-d976239a5660&widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9";
+  "https://cityofdelta.perfectmind.com/24184/Clients/BookMe4BookingPages/Classes?calendarId=89ffcb0c-a63e-4d51-8743-1629fa2a5a51&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
 
-export function getDeltaUrl(): string {
+export const DELTA_ONLINE_REGISTRATION_URL =
+  DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
+
+export const DELTA_FACILITY_URLS: Record<string, string> = {
+  "north-delta": DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
+  sungod: DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
+  "south-delta": DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
+  tilbury: DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
+};
+
+export function getDeltaUrl(facilitySlug?: string | null): string {
+  void facilitySlug;
   return DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
 }
 
 /**
  * Universal link resolver for UI components and serializers.
+ * Never links to generic municipal landing or facility info pages.
  */
 export function resolveBookingUrl(opts: {
   bookingUrl?: string | null;
@@ -163,54 +175,68 @@ export function resolveBookingUrl(opts: {
     return CANLAN_PROGRAMS_FALLBACK;
   }
 
-  // Vancouver
+  // Vancouver (ActiveNet)
   if (municipality === "Vancouver" || (facilitySlug && ["britannia", "hillcrest", "kitsilano", "trout-lake", "sunset", "killarney"].includes(facilitySlug))) {
+    if (source === "live") {
+      if (activityId) return getVancouverDetailUrl(activityId);
+      if (externalId) {
+        const m = externalId.match(/activenet:(\d+)/i);
+        if (m) return getVancouverDetailUrl(m[1]);
+      }
+    }
     if (category === "public_skate") {
-      return getVancouverFallbackUrl(category, facilitySlug);
+      return VANCOUVER_DROPIN_CALENDAR_URL;
     }
-    if (activityId) {
-      return getVancouverDetailUrl(activityId);
-    }
-    if (externalId) {
-      const m = externalId.match(/activenet:(\d+)/i);
-      if (m) return getVancouverDetailUrl(m[1]);
-    }
-    return bookingUrl || getVancouverFallbackUrl(category, facilitySlug);
-  }
-
-  // Richmond
-  if (municipality === "Richmond" || (facilitySlug && ["richmond-ice-centre", "minoru"].includes(facilitySlug))) {
-    return bookingUrl || getRichmondUrl(facilitySlug);
-  }
-
-  // Coquitlam
-  if (municipality === "Coquitlam" || facilitySlug === "poirier") {
     if (
-      source === "schedule" ||
-      (category === "public_skate" && source !== "live" && (!bookingUrl || bookingUrl.includes("perfectmind")))
+      bookingUrl &&
+      !bookingUrl.includes("vancouver.ca") &&
+      !bookingUrl.includes("activity_keyword=")
     ) {
-      return getCoquitlamFallbackUrl(category, facilitySlug);
+      return bookingUrl;
     }
+    return getVancouverFallbackUrl(category, facilitySlug);
+  }
+
+  // Richmond (PerfectMind)
+  if (municipality === "Richmond" || (facilitySlug && ["richmond-ice-centre", "minoru"].includes(facilitySlug))) {
+    if (
+      !bookingUrl ||
+      bookingUrl.includes("23734") ||
+      bookingUrl.includes("/Clients/BookMe4?") ||
+      bookingUrl.includes("richmond.ca")
+    ) {
+      return getRichmondUrl(facilitySlug);
+    }
+    return bookingUrl;
+  }
+
+  // Coquitlam (PerfectMind)
+  if (municipality === "Coquitlam" || facilitySlug === "poirier") {
     if (
       !bookingUrl ||
       bookingUrl.includes("/Clients/BookMe4?") ||
-      bookingUrl.includes("23902")
+      bookingUrl.includes("23902") ||
+      bookingUrl.includes("coquitlam.ca")
     ) {
       return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
     }
     return bookingUrl;
   }
 
-  // Delta
+  // Delta (PerfectMind)
   if (municipality === "Delta" || (facilitySlug && ["north-delta", "sungod", "south-delta", "tilbury"].includes(facilitySlug))) {
-    return bookingUrl || getDeltaUrl();
+    if (
+      !bookingUrl ||
+      bookingUrl.includes("24140") ||
+      bookingUrl.includes("delta.ca") ||
+      bookingUrl.includes("/Clients/BookMe4?")
+    ) {
+      return DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
+    }
+    return bookingUrl;
   }
 
-  // Burnaby:
-  if (category === "public_skate") {
-    return getBurnabyPublicSkateUrl(facilitySlug);
-  }
-
+  // Burnaby (ActiveNet)
   if (source === "live") {
     if (activityId) {
       return getBurnabyDetailUrl(activityId);
@@ -223,12 +249,14 @@ export function resolveBookingUrl(opts: {
     }
   }
 
+  if (category === "public_skate") {
+    return getBurnabyPublicSkateUrl(facilitySlug);
+  }
+
   if (
     !bookingUrl ||
+    bookingUrl.includes("burnaby.ca") ||
     bookingUrl.includes("daily-activities") ||
-    bookingUrl.includes("center_ids=") ||
-    bookingUrl.includes("activity_keyword=") ||
-    bookingUrl.includes("search?") ||
     bookingUrl.endsWith("/search")
   ) {
     return getBurnabyFallbackUrl(category, facilitySlug);
