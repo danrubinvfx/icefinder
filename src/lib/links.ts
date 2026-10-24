@@ -1,5 +1,17 @@
 import type { Category } from "./domain";
 
+export const CANLAN_PROGRAMS_FALLBACK =
+  "https://apps.daysmartrecreation.com/dash/x/#/online/canlan/programs?facility_ids=1";
+
+export const BURNABY_DAILY_ACTIVITIES_URL =
+  "https://www.burnaby.ca/recreation-and-arts/activities-and-registration/daily-activities";
+
+export const BURNABY_FIGURE_SKATING_RESERVE_URL =
+  "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=figure%20skating%20reserve&viewMode=list";
+
+export const BURNABY_HOCKEY_RESERVE_URL =
+  "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&viewMode=list";
+
 /**
  * Direct ActiveNet deep-link to session detail page by numeric activity ID.
  * Takes the user straight to the session page with the green "Enroll Now" button,
@@ -10,46 +22,37 @@ export function getBurnabyDetailUrl(activityId: number | string): string {
 }
 
 /**
- * Fallback link when numeric activity ID is not available or when rendering mock/cached data.
- * Uses ActiveNet's exact query parameters that enforce the search filter (`activity_select_param=2`)
- * and arena center_ids so ActiveNet does not drop keywords or show unrelated recreation activities.
+ * Fallback link when numeric activity ID is not available or when rendering mock/schedule data.
+ * - public_skate: Burnaby public skate is front-desk drop-in published on the municipal calendar.
+ * - figure_buyon: Verified figure skating reserve query on ActiveNet.
+ * - hockey_dropin / stick_and_puck: Verified hockey reserve query on ActiveNet.
  */
-export function getBurnabyFallbackUrl(
-  category?: Category | string,
-  centerId?: number | string | null
-): string {
-  let keyword = "public skate";
+export function getBurnabyFallbackUrl(category?: Category | string): string {
+  if (category === "public_skate") {
+    return BURNABY_DAILY_ACTIVITIES_URL;
+  }
   if (category === "figure_buyon") {
-    keyword = "figure skating reserve";
-  } else if (category === "hockey_dropin" || category === "stick_and_puck") {
-    keyword = "hockey reserve";
-  } else if (category === "public_skate") {
-    keyword = "public skate";
+    return BURNABY_FIGURE_SKATING_RESERVE_URL;
   }
-
-  const encodedKeyword = encodeURIComponent(keyword);
-  let url = `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=${encodedKeyword}&viewMode=list`;
-
-  if (centerId) {
-    url += `&center_ids=${centerId}`;
+  if (category === "hockey_dropin" || category === "stick_and_puck") {
+    return BURNABY_HOCKEY_RESERVE_URL;
   }
-  return url;
+  return BURNABY_DAILY_ACTIVITIES_URL;
 }
 
 export const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
-  "kensington": 147,
+  kensington: 147,
   "rosemary-brown": 180,
   "bill-copeland": 56,
 };
 
 /**
  * Robust link resolver for UI components and serializers.
- * - For Canlan / DaySmart: preserves the direct DaySmart link.
+ * - For Canlan / DaySmart: preserves the direct Dash event deeplink if active, otherwise programs fallback.
  * - For Burnaby:
- *   1. Only construct a `/detail/{id}` URL when the ID is freshly parsed directly
- *      from a live API response in the current sweep (`source === 'live'`).
- *   2. For mock, cached, or fallback sessions, always use verified category reserve queries
- *      with facility-specific center_ids to avoid stale ID redirects (e.g. into yoga classes).
+ *   1. public_skate -> municipal daily-activities calendar.
+ *   2. source === 'live' with numeric activityId -> direct /detail/{id} deep-link.
+ *   3. fallback / schedule / mock -> verified category reserve query.
  */
 export function resolveBookingUrl(opts: {
   bookingUrl?: string | null;
@@ -61,22 +64,19 @@ export function resolveBookingUrl(opts: {
   centerId?: number | string | null;
   source?: string | null;
 }): string {
-  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug, source } = opts;
+  const { bookingUrl, category, bookingPlatform, activityId, externalId, source } = opts;
 
-  // Preserve Canlan / DaySmart URLs
+  // Preserve Canlan / DaySmart verified event URLs, or use programs fallback
   if (bookingPlatform === "canlan" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
-    return bookingUrl || "https://www.canlansports.com/";
+    if (bookingUrl && /daysmartrecreation\.com\/dash\/x\/#\/online\/canlan\/event\/\d+/i.test(bookingUrl)) {
+      return bookingUrl;
+    }
+    return CANLAN_PROGRAMS_FALLBACK;
   }
 
-  // Determine center ID from opts or facility slug
-  let centerId = opts.centerId;
-  if (!centerId && facilitySlug && BURNABY_FACILITY_CENTER_IDS[facilitySlug]) {
-    centerId = BURNABY_FACILITY_CENTER_IDS[facilitySlug];
-  }
-
-  // For mock or schedule fallback data, ALWAYS use verified category reserve query
-  if (source === "mock" || source === "schedule") {
-    return getBurnabyFallbackUrl(category, centerId);
+  // Public skate is front-desk drop-in on the municipal calendar
+  if (category === "public_skate") {
+    return BURNABY_DAILY_ACTIVITIES_URL;
   }
 
   // Only use numeric /detail/{id} when verified live
@@ -92,9 +92,10 @@ export function resolveBookingUrl(opts: {
     }
   }
 
-  // If URL has broken keywords, search params, or brittle mock detail IDs, sanitize to fallback query
+  // If URL has broken keywords, center_ids, or brittle mock detail IDs, sanitize to fallback query
   if (
     !bookingUrl ||
+    bookingUrl.includes("center_ids=") ||
     bookingUrl.includes("activity_keyword=") ||
     bookingUrl.includes("search?") ||
     bookingUrl.endsWith("/search") ||
@@ -102,7 +103,7 @@ export function resolveBookingUrl(opts: {
     bookingUrl.includes("/detail/111580") ||
     bookingUrl.includes("/detail/124539")
   ) {
-    return getBurnabyFallbackUrl(category, centerId);
+    return getBurnabyFallbackUrl(category);
   }
 
   if (activityId && source === "live") {

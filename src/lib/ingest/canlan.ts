@@ -7,6 +7,7 @@
  */
 import type { FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import { CANLAN_PROGRAMS_FALLBACK } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -53,7 +54,8 @@ interface DashResponse {
 
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 
-export function canlanBookingUrl(eventId: string) {
+export function canlanBookingUrl(eventId?: string | null) {
+  if (!eventId) return CANLAN_PROGRAMS_FALLBACK;
   return `https://apps.daysmartrecreation.com/dash/x/#/online/${COMPANY}/event/${eventId}`;
 }
 

@@ -53,7 +53,12 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
   const style = CATEGORY_STYLE[s.category];
   const full = s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
-  const cta = s.bookingPlatform === "canlan" ? "Register" : s.source === "schedule" ? "View on City Site" : "Book on City Site";
+  const cta =
+    s.bookingPlatform === "canlan"
+      ? "Register"
+      : s.category === "public_skate" || s.source === "schedule"
+      ? "View Arena Schedule"
+      : "Book on City Site";
   const destinationUrl = resolveBookingUrl({
     bookingUrl: s.bookingUrl,
     category: s.category,

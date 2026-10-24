@@ -9,8 +9,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { FACILITIES, TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { BURNABY_FACILITY_CENTER_IDS, getBurnabyFallbackUrl } from "../links";
-import { canlanBookingUrl } from "./canlan";
+import { getBurnabyFallbackUrl, CANLAN_PROGRAMS_FALLBACK } from "../links";
 import type { IngestWindow, NormalizedSession } from "./types";
 
 interface Template {
@@ -86,14 +85,11 @@ function eachLocalDay(window: IngestWindow): string[] {
 function bookingUrlFor(
   facility: FacilitySeed,
   category: Category,
-  key: string,
 ) {
   if (facility.bookingPlatform === "canlan") {
-    // Synthetic id keeps the deep-link shape identical to live rows.
-    return canlanBookingUrl(String(Math.abs([...key].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7))));
+    return CANLAN_PROGRAMS_FALLBACK;
   }
-  const centerId = BURNABY_FACILITY_CENTER_IDS[facility.slug];
-  return getBurnabyFallbackUrl(category, centerId);
+  return getBurnabyFallbackUrl(category);
 }
 
 function expand(
@@ -141,7 +137,7 @@ function expand(
         goalieSpots: tpl.goalie?.capacity ?? null,
         goaliesRegistered,
         cost: tpl.cost ?? null,
-        bookingUrl: bookingUrlFor(facility, category, key),
+        bookingUrl: bookingUrlFor(facility, category),
         source,
         activityId: null,
         externalId: null,
