@@ -45,13 +45,13 @@ export async function fetchJson<T>(
   attempt = 1,
 ): Promise<T> {
   await politeGate();
-  const { timeoutMs = 20_000, headers, ...rest } = init;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const { timeoutMs = 8_000, headers, signal, ...rest } = init;
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
   try {
     const res = await fetch(url, {
       ...rest,
-      signal: controller.signal,
+      signal: combinedSignal,
       headers: {
         "User-Agent": nextUserAgent(),
         Accept: "application/json, text/plain, */*",
@@ -76,13 +76,14 @@ export async function fetchJson<T>(
     return JSON.parse(text) as T;
   } catch (err) {
     if (err instanceof ChallengeError) throw err;
-    const isNetwork = err instanceof TypeError || (err as Error).name === "AbortError";
+    const isNetwork =
+      err instanceof TypeError ||
+      (err as Error).name === "AbortError" ||
+      (err as Error).name === "TimeoutError";
     if (isNetwork && attempt < 2) {
       await sleep(POLITE_DELAY_MS * 2);
       return fetchJson<T>(url, init, attempt + 1);
     }
     throw err;
-  } finally {
-    clearTimeout(timer);
   }
 }

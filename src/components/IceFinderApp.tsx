@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2 } from "lucide-react";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/domain";
 import type { FeedPayload, SessionDTO } from "@/lib/queries";
@@ -98,17 +99,27 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
   const [goalieOnly, setGoalieOnly] = useState(false);
   const [facility, setFacility] = useState<string>("all");
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const res = await fetch("/api/sessions", { cache: "no-store" });
-      if (res.ok) setFeed(await res.json());
+      router.refresh();
+      const res = await fetch("/api/sessions", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const nextFeed = await res.json();
+        setFeed(nextFeed);
+      }
+    } catch (err) {
+      console.warn("Manual refresh fallback:", err);
     } finally {
       setRefreshing(false);
       setNow(Date.now());
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     setNow(Date.now());
