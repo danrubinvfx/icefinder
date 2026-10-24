@@ -3,6 +3,8 @@ node_modules
 out
 next-env.d.ts
 *.tsbuildinfo
+.env
+.env.*
 .env*.local
 *.db
 *.db-journal
@@ -10,6 +12,4 @@ next-env.d.ts
 *.sqlite3
 prisma/*.db
 prisma/*.db-journal
-.vercel
-
 .vercel
