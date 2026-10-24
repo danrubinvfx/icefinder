@@ -95,11 +95,38 @@ export function getRichmondUrl(facilitySlug?: string | null): string {
 }
 
 // ── Coquitlam (PerfectMind) ─────────────────────────────────────────────
-export const COQUITLAM_PERFECTMIND_SKATING_URL =
-  "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+export const COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL =
+  "https://cityofcoquitlam.perfectmind.com/Contacts/BookMe4BookingPages/Classes?calendarId=4f07c977-74de-46ab-9d0a-2397f83f254f&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
 
-export function getCoquitlamUrl(): string {
-  return COQUITLAM_PERFECTMIND_SKATING_URL;
+export const COQUITLAM_PERFECTMIND_SKATING_URL =
+  COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+
+export const COQUITLAM_POIRIER_SCHEDULE_FALLBACK =
+  "https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex";
+
+export const COQUITLAM_FACILITY_SCHEDULE_URLS: Record<string, string> = {
+  poirier: COQUITLAM_POIRIER_SCHEDULE_FALLBACK,
+};
+
+export function getCoquitlamFallbackUrl(
+  category?: Category | string,
+  facilitySlug?: string | null,
+): string {
+  if (facilitySlug && COQUITLAM_FACILITY_SCHEDULE_URLS[facilitySlug]) {
+    return COQUITLAM_FACILITY_SCHEDULE_URLS[facilitySlug];
+  }
+  return COQUITLAM_POIRIER_SCHEDULE_FALLBACK;
+}
+
+export function getCoquitlamUrl(
+  category?: Category | string,
+  facilitySlug?: string | null,
+  source?: string | null,
+): string {
+  if (source === "schedule" || (category === "public_skate" && source !== "live")) {
+    return getCoquitlamFallbackUrl(category, facilitySlug);
+  }
+  return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
 }
 
 // ── Delta (PerfectMind) ─────────────────────────────────────────────────
@@ -158,7 +185,20 @@ export function resolveBookingUrl(opts: {
 
   // Coquitlam
   if (municipality === "Coquitlam" || facilitySlug === "poirier") {
-    return bookingUrl || getCoquitlamUrl();
+    if (
+      source === "schedule" ||
+      (category === "public_skate" && source !== "live" && (!bookingUrl || bookingUrl.includes("perfectmind")))
+    ) {
+      return getCoquitlamFallbackUrl(category, facilitySlug);
+    }
+    if (
+      !bookingUrl ||
+      bookingUrl.includes("/Clients/BookMe4?") ||
+      bookingUrl.includes("23902")
+    ) {
+      return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+    }
+    return bookingUrl;
   }
 
   // Delta

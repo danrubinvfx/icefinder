@@ -201,6 +201,7 @@ export async function collectPerfectMind(
       bookingPlatform: facility.bookingPlatform,
       facilitySlug: facility.slug,
       municipality: facility.municipality,
+      source: "live",
     });
 
     const rink = c.Facility?.replace(/^registered visits\s*-\s*/i, "").trim() || null;

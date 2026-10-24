@@ -202,12 +202,14 @@ function eachLocalDay(window: IngestWindow): string[] {
 function bookingUrlFor(
   facility: FacilitySeed,
   category: Category,
+  source?: NormalizedSession["source"],
 ) {
   return resolveBookingUrl({
     category,
     bookingPlatform: facility.bookingPlatform,
     facilitySlug: facility.slug,
     municipality: facility.municipality,
+    source,
   });
 }
 
@@ -255,7 +257,7 @@ function expand(
         goalieSpots: tpl.goalie?.capacity ?? null,
         goaliesRegistered,
         cost: tpl.cost ?? null,
-        bookingUrl: bookingUrlFor(facility, category),
+        bookingUrl: bookingUrlFor(facility, category, source),
         source,
         externalId: null,
       });
