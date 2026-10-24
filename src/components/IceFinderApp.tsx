@@ -515,6 +515,16 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
 
       {/* ── Feed ─────────────────────────────────────────────── */}
       <main className="space-y-6 px-4 pt-4">
+        {/* SEO Header */}
+        <header className="space-y-1">
+          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+            Metro Vancouver Real-Time Ice Times &amp; Drop-In Schedules
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-600">
+            Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.
+          </p>
+        </header>
+
         {/* Quick Day-Selector Ribbon for 7-Day / Multi-Day View */}
         {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (
           <div className="sticky top-14 z-10 -mx-4 border-b border-slate-200/80 bg-slate-50/95 px-4 py-2 backdrop-blur">
@@ -597,6 +607,75 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
             </section>
           ))
         )}
+
+        {/* ── Metro Vancouver Arenas & Facilities Directory ────────────────── */}
+        <section aria-labelledby="arenas-heading" className="space-y-5 rounded-2xl border border-slate-200 bg-slate-50/50 p-5">
+          <div className="space-y-1">
+            <h2 id="arenas-heading" className="text-base font-bold uppercase tracking-wider text-slate-900">
+              Metro Vancouver Arenas &amp; Drop-In Facilities
+            </h2>
+            <p className="text-xs text-slate-500">
+              Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, Richmond, Coquitlam, and Delta.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {MUNICIPALITIES.filter((m) => m !== "All Metro Van").map((mun) => {
+              const munFacilities = feed.facilities.filter((f) => f.municipality === mun);
+              if (munFacilities.length === 0) return null;
+              return (
+                <div key={mun} id={mun.toLowerCase()} className="scroll-mt-24 space-y-2">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                    {mun} Arenas &amp; Schedules
+                  </h3>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {munFacilities.map((fac) => (
+                      <article
+                        key={fac.slug}
+                        id={fac.slug}
+                        className="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs transition hover:border-slate-300 hover:shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h2 className="text-sm font-bold text-slate-900">
+                              {fac.name}
+                            </h2>
+                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                              <MapPin className="size-3 shrink-0 text-slate-400" aria-hidden />
+                              <span className="truncate">{fac.address}</span>
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                            {fac.municipality}
+                          </span>
+                        </div>
+                        <div className="mt-2.5 flex flex-wrap gap-1 text-[11px]">
+                          <span className="rounded bg-ice-50 px-1.5 py-0.5 font-medium text-ice-700">Drop-in Hockey</span>
+                          <span className="rounded bg-violet-50 px-1.5 py-0.5 font-medium text-violet-700">Stick &amp; Puck</span>
+                          <span className="rounded bg-pink-50 px-1.5 py-0.5 font-medium text-pink-700">Figure Buy-ons</span>
+                          <span className="rounded bg-teal-50 px-1.5 py-0.5 font-medium text-teal-700">Public Skate</span>
+                        </div>
+                        <div className="mt-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMunicipality(fac.municipality as Municipality);
+                              setFacility(fac.slug);
+                              window.scrollTo({ top: 0, behavior: "smooth" });
+                            }}
+                            className="text-xs font-semibold text-ice-600 hover:text-ice-800"
+                          >
+                            Filter ice times for {fac.shortName} &rarr;
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <footer className="pt-6 text-center text-xs leading-relaxed text-slate-400">
           Data from Burnaby, Vancouver, Richmond, Coquitlam, Delta & Canlan Sports. Always confirm on the booking

@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "IceFinder — Burnaby Ice Times",
+    name: "IceFinder — Metro Vancouver Ice Times",
     short_name: "IceFinder",
-    description: "Live drop-in hockey, stick & puck, figure buy-on and public skate availability.",
+    description: "Live drop-in hockey, stick & puck, figure buy-on and public skate availability across Metro Vancouver.",
     start_url: "/",
     display: "standalone",
     background_color: "#f8fafc",

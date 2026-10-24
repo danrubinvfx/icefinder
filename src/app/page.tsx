@@ -21,6 +21,16 @@ function FeedSkeleton() {
         <div className="h-8 w-32 rounded-full bg-slate-200" />
       </div>
 
+      {/* SEO Title in Skeleton */}
+      <div className="pt-4 pb-2">
+        <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+          Metro Vancouver Real-Time Ice Times &amp; Drop-In Schedules
+        </h1>
+        <p className="mt-1 text-xs sm:text-sm text-slate-500">
+          Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.
+        </p>
+      </div>
+
       {/* Pill Filters Skeleton */}
       <div className="mt-4 flex gap-2 overflow-x-auto pb-3">
         <div className="h-9 w-20 rounded-full bg-slate-200" />
