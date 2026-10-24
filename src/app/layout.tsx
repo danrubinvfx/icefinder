@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { FeedbackBanner } from "@/components/FeedbackBanner";
 import "./globals.css";
 
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-dvh font-sans">
         <FeedbackBanner />
         {children}
+        <Analytics />
       </body>
     </html>
   );
