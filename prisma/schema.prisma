@@ -1,13 +1,13 @@
-// IceFinder data model — SQLite for zero-config local dev.
-// Swap provider to "postgresql" (Supabase) for production; schema is portable.
+// IceFinder data model — Supabase PostgreSQL in production.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Facility {
