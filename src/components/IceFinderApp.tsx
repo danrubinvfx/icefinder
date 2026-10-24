@@ -17,7 +17,6 @@ import {
   weekendDays,
 } from "@/lib/time";
 import { SessionCard, goalieNeeded } from "./SessionCard";
-import { SponsorCard } from "./SponsorCard";
 
 type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
 type CategoryFilter = "all" | Category;
@@ -335,9 +334,6 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
     }
   };
 
-  let cardIndex = 0;
-  const sponsorAfter = Math.min(2, Math.max(visible.length - 1, 0));
-
   return (
     <div className="mx-auto min-h-dvh max-w-3xl pb-16">
       {/* ── Header ───────────────────────────────────────────── */}
@@ -595,15 +591,9 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
                   </div>
                 </div>
               )}
-              {sessions.map((s) => {
-                const i = cardIndex++;
-                return (
-                  <div key={s.id} className="space-y-3">
-                    <SessionCard s={s} relUpdated={relativeTime(s.updatedAt, now)} />
-                    {i === sponsorAfter && <SponsorCard nextSession={visible[0]?.s} />}
-                  </div>
-                );
-              })}
+              {sessions.map((s) => (
+                <SessionCard key={s.id} s={s} relUpdated={relativeTime(s.updatedAt, now)} />
+              ))}
             </section>
           ))
         )}
