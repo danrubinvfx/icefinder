@@ -11,6 +11,10 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
+import {
+  RICHMOND_PERFECTMIND_REGISTRATION_URL,
+  RICHMOND_ARENAS_FALLBACK_URL,
+} from "../src/lib/links";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -29,9 +33,47 @@ const intervalMin = watch !== undefined ? Number(watch || 15) : 0;
 
 const prisma = new PrismaClient();
 
+async function sanitizeRichmondRows(prismaClient: PrismaClient) {
+  const richmondFacilities = await prismaClient.facility.findMany({
+    where: { slug: { in: ["richmond-ice-centre", "minoru"] } },
+    select: { id: true },
+  });
+  const facilityIds = richmondFacilities.map((f) => f.id);
+  if (facilityIds.length === 0) return;
+
+  const reservableRes = await prismaClient.iceSession.updateMany({
+    where: {
+      facilityId: { in: facilityIds },
+      category: { not: "public_skate" },
+      bookingUrl: { not: RICHMOND_PERFECTMIND_REGISTRATION_URL },
+    },
+    data: {
+      bookingUrl: RICHMOND_PERFECTMIND_REGISTRATION_URL,
+    },
+  });
+
+  const publicSkateRes = await prismaClient.iceSession.updateMany({
+    where: {
+      facilityId: { in: facilityIds },
+      category: "public_skate",
+      bookingUrl: { not: RICHMOND_ARENAS_FALLBACK_URL },
+    },
+    data: {
+      bookingUrl: RICHMOND_ARENAS_FALLBACK_URL,
+    },
+  });
+
+  if (reservableRes.count > 0 || publicSkateRes.count > 0) {
+    console.log(
+      `Cleaned Richmond URLs in DB: ${reservableRes.count} reservable sessions -> registration portal, ${publicSkateRes.count} public skate sessions -> arenas schedule.`,
+    );
+  }
+}
+
 async function once() {
   try {
     const report = await runIngestion(prisma, opts);
+    await sanitizeRichmondRows(prisma);
     console.table(report.results.map(({ error, ...r }) => ({ ...r, error: error?.slice(0, 60) ?? "" })));
     return report.status;
   } catch (err) {

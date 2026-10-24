@@ -7,7 +7,11 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { resolveBookingUrl } from "../links";
+import {
+  resolveBookingUrl,
+  RICHMOND_PERFECTMIND_REGISTRATION_URL,
+  RICHMOND_ARENAS_FALLBACK_URL,
+} from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -196,13 +200,18 @@ export async function collectPerfectMind(
 
     const spotsLeft = parseSpots(c.Spots);
     const cost = parsePrice(c.PriceRange);
-    const bookingUrl = resolveBookingUrl({
-      category,
-      bookingPlatform: facility.bookingPlatform,
-      facilitySlug: facility.slug,
-      municipality: facility.municipality,
-      source: "live",
-    });
+    const bookingUrl =
+      facility.municipality === "Richmond"
+        ? category === "public_skate"
+          ? RICHMOND_ARENAS_FALLBACK_URL
+          : RICHMOND_PERFECTMIND_REGISTRATION_URL
+        : resolveBookingUrl({
+            category,
+            bookingPlatform: facility.bookingPlatform,
+            facilitySlug: facility.slug,
+            municipality: facility.municipality,
+            source: "live",
+          });
 
     const rink = c.Facility?.replace(/^registered visits\s*-\s*/i, "").trim() || null;
 

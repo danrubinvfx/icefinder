@@ -115,21 +115,35 @@ export function getCoquitlamFallbackUrl(
 }
 
 // ── Richmond (PerfectMind) ──────────────────────────────────────────────
+export const RICHMOND_PERFECTMIND_REGISTRATION_URL =
+  "https://richmondcity.perfectmind.com/23650/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+
+export const RICHMOND_ARENAS_FALLBACK_URL = "https://www.richmond.ca/arenas";
+
 export const RICHMOND_FACILITY_URLS: Record<string, string> = {
-  "richmond-ice-centre":
-    "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=8bd697eb-ee1e-4067-b6bb-be1901a7753d&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False",
-  minoru:
-    "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=6ef4a37b-91d1-432a-a92e-9828e83b4c10&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False",
+  "richmond-ice-centre": RICHMOND_PERFECTMIND_REGISTRATION_URL,
+  minoru: RICHMOND_PERFECTMIND_REGISTRATION_URL,
 };
 
 export const RICHMOND_PERFECTMIND_CALENDAR_URL =
-  RICHMOND_FACILITY_URLS["richmond-ice-centre"];
+  RICHMOND_PERFECTMIND_REGISTRATION_URL;
 
-export function getRichmondUrl(facilitySlug?: string | null): string {
-  if (facilitySlug && RICHMOND_FACILITY_URLS[facilitySlug]) {
-    return RICHMOND_FACILITY_URLS[facilitySlug];
+export function getRichmondUrl(
+  categoryOrSlug?: Category | string | null,
+  facilitySlug?: string | null,
+): string {
+  void facilitySlug;
+  if (categoryOrSlug === "public_skate") {
+    return RICHMOND_ARENAS_FALLBACK_URL;
   }
-  return RICHMOND_PERFECTMIND_CALENDAR_URL;
+  return RICHMOND_PERFECTMIND_REGISTRATION_URL;
+}
+
+export function getRichmondFallbackUrl(
+  category?: Category | string,
+  facilitySlug?: string | null,
+): string {
+  return getRichmondUrl(category, facilitySlug);
 }
 
 // ── Delta (PerfectMind) ─────────────────────────────────────────────────
@@ -199,13 +213,17 @@ export function resolveBookingUrl(opts: {
 
   // Richmond (PerfectMind)
   if (municipality === "Richmond" || (facilitySlug && ["richmond-ice-centre", "minoru"].includes(facilitySlug))) {
+    if (category === "public_skate" || source === "schedule") {
+      return RICHMOND_ARENAS_FALLBACK_URL;
+    }
     if (
       !bookingUrl ||
+      bookingUrl.includes("BookMe4BookingPages") ||
+      bookingUrl.includes("calendarId=") ||
       bookingUrl.includes("23734") ||
-      bookingUrl.includes("/Clients/BookMe4?") ||
       bookingUrl.includes("richmond.ca")
     ) {
-      return getRichmondUrl(facilitySlug);
+      return RICHMOND_PERFECTMIND_REGISTRATION_URL;
     }
     return bookingUrl;
   }
