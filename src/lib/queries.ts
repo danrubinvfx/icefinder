@@ -3,6 +3,7 @@ import { prisma } from "./db";
 import { FACILITIES, FACILITY_SHORT_NAME, type Category } from "./domain";
 import { mockSessionsFor, publicSkateScheduleFor } from "./ingest/mock";
 import { sessionKey } from "./normalize";
+import { resolveBookingUrl, getBurnabyFallbackUrl } from "./links";
 
 export interface SessionDTO {
   id: string;
@@ -24,6 +25,8 @@ export interface SessionDTO {
   cost: number | null;
   bookingUrl: string;
   source: string;
+  activityId?: number | null;
+  externalId?: string | null;
   updatedAt: string;
 }
 
@@ -83,8 +86,10 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         goalieSpots: s.goalieSpots,
         goaliesRegistered: s.goaliesRegistered,
         cost: s.cost,
-        bookingUrl: s.bookingUrl,
+        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category),
         source: s.source,
+        activityId: s.activityId ?? null,
+        externalId: s.externalId ?? null,
         updatedAt: new Date(now - 5 * 60_000).toISOString(),
       });
     }
@@ -146,8 +151,16 @@ export async function getFeed(): Promise<FeedPayload> {
           goalieSpots: r.goalieSpots,
           goaliesRegistered: r.goaliesRegistered,
           cost: r.cost,
-          bookingUrl: r.bookingUrl,
+          bookingUrl: resolveBookingUrl({
+            bookingUrl: r.bookingUrl,
+            category: r.category as Category,
+            bookingPlatform: r.facility.bookingPlatform,
+            activityId: r.activityId,
+            externalId: r.externalId,
+          }),
           source: r.source,
+          activityId: r.activityId ?? null,
+          externalId: r.externalId,
           updatedAt: r.updatedAt.toISOString(),
         })),
         facilities: facilities.map((f) => ({

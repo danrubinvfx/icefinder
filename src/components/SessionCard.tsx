@@ -3,6 +3,7 @@
 import { ExternalLink, Clock, MapPin, ShieldHalf, DollarSign, Users, Footprints } from "lucide-react";
 import { CATEGORY_SHORT, type Category } from "@/lib/domain";
 import { formatTimeRange } from "@/lib/time";
+import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
 
 const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }> = {
@@ -53,6 +54,13 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
   const full = s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
   const cta = s.bookingPlatform === "canlan" ? "Register" : s.source === "schedule" ? "View on City Site" : "Book on City Site";
+  const destinationUrl = resolveBookingUrl({
+    bookingUrl: s.bookingUrl,
+    category: s.category,
+    bookingPlatform: s.bookingPlatform,
+    activityId: s.activityId,
+    externalId: s.externalId,
+  });
 
   return (
     <article
@@ -118,7 +126,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
         <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-center">
           <CapacityChip s={s} />
           <a
-            href={s.bookingUrl}
+            href={destinationUrl}
             target="_blank"
             rel="noopener noreferrer"
             className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2 ${

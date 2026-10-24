@@ -43,6 +43,7 @@ model IceSession {
   goaliesRegistered Int?     @map("goalies_registered")
   cost              Float?
   bookingUrl        String   @map("booking_url")
+  activityId        Int?     @map("activity_id")
   source            String   @default("live") // 'live' | 'mock'
   externalId        String?  @map("external_id")
   updatedAt         DateTime @updatedAt @map("updated_at")

@@ -17,6 +17,7 @@ export interface NormalizedSession {
   cost: number | null;
   bookingUrl: string;
   source: "live" | "mock" | "schedule";
+  activityId?: number | null;
   externalId: string | null;
 }
 

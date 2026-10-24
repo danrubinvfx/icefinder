@@ -7,8 +7,9 @@
  * pay-at-the-door (not reservable), so they never appear in the live booking feed.
  */
 import { fromZonedTime } from "date-fns-tz";
-import { FACILITIES, TIMEZONE, type FacilitySeed } from "../domain";
+import { FACILITIES, TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import { getBurnabyFallbackUrl } from "../links";
 import { canlanBookingUrl } from "./canlan";
 import type { IngestWindow, NormalizedSession } from "./types";
 
@@ -82,12 +83,12 @@ function eachLocalDay(window: IngestWindow): string[] {
   return days;
 }
 
-function bookingUrlFor(facility: FacilitySeed, title: string, key: string) {
+function bookingUrlFor(facility: FacilitySeed, category: Category, title: string, key: string) {
   if (facility.bookingPlatform === "canlan") {
     // Synthetic id keeps the deep-link shape identical to live rows.
     return canlanBookingUrl(String(Math.abs([...key].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7))));
   }
-  return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?activity_keyword=${encodeURIComponent(cleanTitle(title))}`;
+  return getBurnabyFallbackUrl(category);
 }
 
 function expand(
@@ -135,8 +136,9 @@ function expand(
         goalieSpots: tpl.goalie?.capacity ?? null,
         goaliesRegistered,
         cost: tpl.cost ?? null,
-        bookingUrl: bookingUrlFor(facility, tpl.title, key),
+        bookingUrl: bookingUrlFor(facility, category, tpl.title, key),
         source,
+        activityId: null,
         externalId: null,
       });
     }

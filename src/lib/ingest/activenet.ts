@@ -9,6 +9,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import { getBurnabyDetailUrl, getBurnabyFallbackUrl } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -154,6 +155,11 @@ export async function collectActiveNet(
       existing.openSpots += Math.max(0, total - enrolled);
       continue;
     }
+    const numericActivityId = typeof item.id === "number" ? item.id : Number(item.id) || null;
+    const directUrl = numericActivityId
+      ? getBurnabyDetailUrl(numericActivityId)
+      : getBurnabyFallbackUrl(category);
+
     sessions.set(key, {
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(item.name),
@@ -168,9 +174,10 @@ export async function collectActiveNet(
       goalieSpots: null,
       goaliesRegistered: null,
       cost: parseCost(item.fee?.label),
-      bookingUrl: item.detail_url,
+      bookingUrl: directUrl,
       source: "live",
-      externalId: `activenet:${item.id}`,
+      activityId: numericActivityId,
+      externalId: numericActivityId ? `activenet:${numericActivityId}` : null,
     });
   }
 
