@@ -1,0 +1,18 @@
+name: IceFinder Inventory Sync
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Ping IceFinder Sync Endpoint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Live Sync
+        run: |
+          curl -X GET "https://icefinder-ecru.vercel.app/api/sync" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --fail \
+            --max-time 120

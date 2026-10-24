@@ -20,7 +20,7 @@ export function getBurnabyFallbackUrl(
 ): string {
   let keyword = "skate";
   if (category === "figure_buyon") {
-    keyword = "figure skating";
+    keyword = "figure skating reserve";
   } else if (category === "hockey_dropin" || category === "stick_and_puck") {
     keyword = "hockey reserve";
   } else if (category === "public_skate") {
@@ -30,7 +30,7 @@ export function getBurnabyFallbackUrl(
   const encodedKeyword = encodeURIComponent(keyword);
   let url = `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=${encodedKeyword}&viewMode=list`;
 
-  if (centerId) {
+  if (centerId && category !== "figure_buyon") {
     url += `&center_ids=${centerId}`;
   }
   return url;
@@ -45,10 +45,11 @@ const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
  * Robust link resolver for UI components and serializers.
  * - For Canlan / DaySmart: preserves the direct DaySmart link.
  * - For Burnaby:
- *   1. If explicit activityId exists, returns direct detail deep-link.
- *   2. If externalId has numeric ID (e.g. "activenet:123456"), returns direct detail deep-link.
- *   3. If bookingUrl has numeric activity ID in path, converts to direct detail deep-link.
- *   4. If URL has query params with specific keywords or is a search page, replaces with working fallback
+ *   1. Intercepts cancelled placeholder #111580 and points to verified Kensington figure skating #138467.
+ *   2. If explicit activityId exists, returns direct detail deep-link.
+ *   3. If externalId has numeric ID (e.g. "activenet:123456"), returns direct detail deep-link.
+ *   4. If bookingUrl has numeric activity ID in path, converts to direct detail deep-link.
+ *   5. If URL has query params with specific keywords or is a search page, replaces with working fallback
  *      including activity_select_param=2 and arena center_ids.
  */
 export function resolveBookingUrl(opts: {
@@ -65,6 +66,16 @@ export function resolveBookingUrl(opts: {
   // Preserve Canlan / DaySmart URLs
   if (bookingPlatform === "canlan" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
     return bookingUrl || "https://www.canlansports.com/";
+  }
+
+  // Intercept cancelled placeholder #111580 and replace with verified Kensington figure skating #138467
+  if (
+    activityId === 111580 ||
+    String(activityId) === "111580" ||
+    (externalId && externalId.includes("111580")) ||
+    (bookingUrl && bookingUrl.includes("111580"))
+  ) {
+    return getBurnabyDetailUrl(138467);
   }
 
   // 1. Direct numeric activityId
