@@ -11,18 +11,35 @@ export function getBurnabyDetailUrl(activityId: number | string): string {
 
 /**
  * Fallback link when numeric activity ID is not available.
- * Uses Burnaby's working "Reserve in Advance" ice search with broad parameters
- * instead of free-text titles that return "No results found".
+ * Uses ActiveNet's exact query parameters that enforce the search filter (`activity_select_param=2`)
+ * so ActiveNet does not drop keywords and show unfiltered recreation results.
  */
-export function getBurnabyFallbackUrl(category?: Category | string): string {
+export function getBurnabyFallbackUrl(
+  category?: Category | string,
+  centerId?: number | string | null
+): string {
+  let keyword = "skate";
   if (category === "figure_buyon") {
-    return "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=figure%20skating%20reserve&viewMode=list";
+    keyword = "figure skating";
+  } else if (category === "hockey_dropin" || category === "stick_and_puck") {
+    keyword = "hockey reserve";
+  } else if (category === "public_skate") {
+    keyword = "skate";
   }
-  if (category === "hockey_dropin" || category === "stick_and_puck") {
-    return "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=hockey%20reserve&viewMode=list";
+
+  const encodedKeyword = encodeURIComponent(keyword);
+  let url = `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=${encodedKeyword}&viewMode=list`;
+
+  if (centerId) {
+    url += `&center_ids=${centerId}`;
   }
-  return "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&viewMode=list";
+  return url;
 }
+
+const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
+  "rosemary-brown": 180,
+  "bill-copeland": 56,
+};
 
 /**
  * Robust link resolver for UI components and serializers.
@@ -31,20 +48,23 @@ export function getBurnabyFallbackUrl(category?: Category | string): string {
  *   1. If explicit activityId exists, returns direct detail deep-link.
  *   2. If externalId has numeric ID (e.g. "activenet:123456"), returns direct detail deep-link.
  *   3. If bookingUrl has numeric activity ID in path, converts to direct detail deep-link.
- *   4. If URL has query params with specific keywords (like "Buy-on Ice"), replaces with broad working fallback.
+ *   4. If URL has query params with specific keywords or is a search page, replaces with working fallback
+ *      including activity_select_param=2 and arena center_ids.
  */
 export function resolveBookingUrl(opts: {
-  bookingUrl: string;
+  bookingUrl?: string | null;
   category: Category;
-  bookingPlatform: string;
+  bookingPlatform?: string;
   activityId?: number | null;
   externalId?: string | null;
+  facilitySlug?: string | null;
+  centerId?: number | string | null;
 }): string {
-  const { bookingUrl, category, bookingPlatform, activityId, externalId } = opts;
+  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug } = opts;
 
   // Preserve Canlan / DaySmart URLs
   if (bookingPlatform === "canlan" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
-    return bookingUrl;
+    return bookingUrl || "https://www.canlansports.com/";
   }
 
   // 1. Direct numeric activityId
@@ -52,12 +72,18 @@ export function resolveBookingUrl(opts: {
     return getBurnabyDetailUrl(activityId);
   }
 
-  // 2. Extract numeric ID from externalId if present
+  // 2. Extract numeric ID from externalId if present (e.g. "activenet:123456")
   if (externalId) {
     const m = externalId.match(/activenet:(\d+)/i);
     if (m) {
       return getBurnabyDetailUrl(m[1]);
     }
+  }
+
+  // Determine center ID from opts or facility slug
+  let centerId = opts.centerId;
+  if (!centerId && facilitySlug && BURNABY_FACILITY_CENTER_IDS[facilitySlug]) {
+    centerId = BURNABY_FACILITY_CENTER_IDS[facilitySlug];
   }
 
   // 3. Extract numeric ID from existing URL if present
@@ -67,18 +93,26 @@ export function resolveBookingUrl(opts: {
       return getBurnabyDetailUrl(detailMatch[1]);
     }
 
-    // 4. If URL has broken activity_keyword query (like "Buy-on Ice") or is a search page, use working fallback
+    // Check if the URL has center_ids already
+    if (!centerId) {
+      const centerMatch = bookingUrl.match(/center_ids=(\d+)/i);
+      if (centerMatch) {
+        centerId = centerMatch[1];
+      }
+    }
+
+    // 4. If URL is a search URL (or contains activity_keyword or bare search), sanitize it to have activity_select_param=2
     if (
       bookingUrl.includes("activity_keyword=") ||
       bookingUrl.includes("search?") ||
       bookingUrl.endsWith("/search")
     ) {
-      return getBurnabyFallbackUrl(category);
+      return getBurnabyFallbackUrl(category, centerId);
     }
 
     return bookingUrl;
   }
 
-  // General fallback by category
-  return getBurnabyFallbackUrl(category);
+  // General fallback by category & center
+  return getBurnabyFallbackUrl(category, centerId);
 }

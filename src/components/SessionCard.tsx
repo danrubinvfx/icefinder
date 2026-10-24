@@ -60,6 +60,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     bookingPlatform: s.bookingPlatform,
     activityId: s.activityId,
     externalId: s.externalId,
+    facilitySlug: s.facilitySlug,
   });
 
   return (

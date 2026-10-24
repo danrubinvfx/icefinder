@@ -9,7 +9,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { FACILITIES, TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { getBurnabyFallbackUrl } from "../links";
+import { getBurnabyDetailUrl, getBurnabyFallbackUrl } from "../links";
 import { canlanBookingUrl } from "./canlan";
 import type { IngestWindow, NormalizedSession } from "./types";
 
@@ -22,22 +22,23 @@ interface Template {
   rink?: string;
   cost?: number;
   goalie?: { capacity: number };
+  activityId?: number;
 }
 
 const MOCK_TEMPLATES: Record<string, Template[]> = {
   "rosemary-brown": [
-    { title: "Adult Stick & Puck 19+", days: [1, 3, 5], start: "11:30", minutes: 75, capacity: 20, rink: "Rink 1", cost: 9.6 },
-    { title: "Reserve In Advance: Recreational Hockey 18yrs+", days: [2, 4, 6], start: "21:45", minutes: 75, capacity: 20, rink: "Rink 1", cost: 9.6, goalie: { capacity: 3 } },
-    { title: "Buy-on Ice - Figure Skating Star 2+", days: [1, 2, 4], start: "13:00", minutes: 75, capacity: 20, rink: "Rink 2", cost: 11.25 },
+    { title: "Adult Stick & Puck 19+", days: [1, 3, 5], start: "11:30", minutes: 75, capacity: 20, rink: "Rink 1", cost: 9.6, activityId: 119947 },
+    { title: "Reserve In Advance: Recreational Hockey 18yrs+", days: [2, 4, 6], start: "21:45", minutes: 75, capacity: 20, rink: "Rink 1", cost: 9.6, goalie: { capacity: 3 }, activityId: 119919 },
+    { title: "Buy-on Ice - Figure Skating Star 2+", days: [1, 2, 4], start: "13:00", minutes: 75, capacity: 20, rink: "Rink 2", cost: 11.25, activityId: 120033 },
   ],
   kensington: [
-    { title: "Adult Drop-in Hockey 19+", days: [0, 1, 3, 5], start: "22:00", minutes: 75, capacity: 22, rink: "Rink 1", cost: 9.6, goalie: { capacity: 2 } },
-    { title: "Figure Skating Buy-on Ice", days: [6, 0], start: "07:15", minutes: 60, capacity: 18, rink: "Rink 1", cost: 11.25 },
+    { title: "Adult Drop-in Hockey 19+", days: [0, 1, 3, 5], start: "22:00", minutes: 75, capacity: 22, rink: "Rink 1", cost: 9.6, goalie: { capacity: 2 }, activityId: 111597 },
+    { title: "Figure Skating Buy-on Ice", days: [6, 0], start: "07:15", minutes: 60, capacity: 18, rink: "Rink 1", cost: 11.25, activityId: 111580 },
   ],
   "bill-copeland": [
-    { title: "Shoot and Score 18yrs+", days: [1, 2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 9.6 },
-    { title: "Recreational Hockey", days: [2, 5, 6], start: "20:30", minutes: 75, capacity: 26, cost: 9.6, goalie: { capacity: 3 } },
-    { title: "Buy-on Ice", days: [3, 6], start: "09:00", minutes: 75, capacity: 20, cost: 11.25 },
+    { title: "Shoot and Score 18yrs+", days: [1, 2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 9.6, activityId: 117629 },
+    { title: "Recreational Hockey", days: [2, 5, 6], start: "20:30", minutes: 75, capacity: 26, cost: 9.6, goalie: { capacity: 3 }, activityId: 117658 },
+    { title: "Buy-on Ice", days: [3, 6], start: "09:00", minutes: 75, capacity: 20, cost: 11.25, activityId: 117643 },
   ],
   "scotia-barn": [
     { title: "Shinny", days: [0, 1, 2, 3, 4, 5, 6], start: "10:00", minutes: 65, capacity: 20, rink: "Rink 3", cost: 18, goalie: { capacity: 2 } },
@@ -83,12 +84,22 @@ function eachLocalDay(window: IngestWindow): string[] {
   return days;
 }
 
-function bookingUrlFor(facility: FacilitySeed, category: Category, title: string, key: string) {
+function bookingUrlFor(
+  facility: FacilitySeed,
+  category: Category,
+  title: string,
+  key: string,
+  activityId?: number
+) {
   if (facility.bookingPlatform === "canlan") {
     // Synthetic id keeps the deep-link shape identical to live rows.
     return canlanBookingUrl(String(Math.abs([...key].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7))));
   }
-  return getBurnabyFallbackUrl(category);
+  if (activityId) {
+    return getBurnabyDetailUrl(activityId);
+  }
+  const centerId = facility.slug === "rosemary-brown" ? 180 : facility.slug === "bill-copeland" ? 56 : undefined;
+  return getBurnabyFallbackUrl(category, centerId);
 }
 
 function expand(
@@ -136,10 +147,10 @@ function expand(
         goalieSpots: tpl.goalie?.capacity ?? null,
         goaliesRegistered,
         cost: tpl.cost ?? null,
-        bookingUrl: bookingUrlFor(facility, category, tpl.title, key),
+        bookingUrl: bookingUrlFor(facility, category, tpl.title, key, tpl.activityId),
         source,
-        activityId: null,
-        externalId: null,
+        activityId: tpl.activityId ?? null,
+        externalId: tpl.activityId ? `activenet:${tpl.activityId}` : null,
       });
     }
   }
