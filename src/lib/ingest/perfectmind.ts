@@ -11,6 +11,8 @@ import {
   resolveBookingUrl,
   RICHMOND_PERFECTMIND_REGISTRATION_URL,
   RICHMOND_ARENAS_FALLBACK_URL,
+  DELTA_PERFECTMIND_REGISTRATION_URL,
+  DELTA_SKATING_FALLBACK_URL,
 } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -205,6 +207,10 @@ export async function collectPerfectMind(
         ? category === "public_skate"
           ? RICHMOND_ARENAS_FALLBACK_URL
           : RICHMOND_PERFECTMIND_REGISTRATION_URL
+        : facility.municipality === "Delta"
+        ? category === "public_skate"
+          ? DELTA_SKATING_FALLBACK_URL
+          : DELTA_PERFECTMIND_REGISTRATION_URL
         : resolveBookingUrl({
             category,
             bookingPlatform: facility.bookingPlatform,

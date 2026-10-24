@@ -14,6 +14,8 @@ import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
 import {
   RICHMOND_PERFECTMIND_REGISTRATION_URL,
   RICHMOND_ARENAS_FALLBACK_URL,
+  DELTA_PERFECTMIND_REGISTRATION_URL,
+  DELTA_SKATING_FALLBACK_URL,
 } from "../src/lib/links";
 
 function arg(name: string): string | undefined {
@@ -70,10 +72,48 @@ async function sanitizeRichmondRows(prismaClient: PrismaClient) {
   }
 }
 
+async function sanitizeDeltaRows(prismaClient: PrismaClient) {
+  const deltaFacilities = await prismaClient.facility.findMany({
+    where: { slug: { in: ["sungod", "north-delta", "south-delta", "tilbury"] } },
+    select: { id: true },
+  });
+  const facilityIds = deltaFacilities.map((f) => f.id);
+  if (facilityIds.length === 0) return;
+
+  const reservableRes = await prismaClient.iceSession.updateMany({
+    where: {
+      facilityId: { in: facilityIds },
+      category: { not: "public_skate" },
+      bookingUrl: { not: DELTA_PERFECTMIND_REGISTRATION_URL },
+    },
+    data: {
+      bookingUrl: DELTA_PERFECTMIND_REGISTRATION_URL,
+    },
+  });
+
+  const publicSkateRes = await prismaClient.iceSession.updateMany({
+    where: {
+      facilityId: { in: facilityIds },
+      category: "public_skate",
+      bookingUrl: { not: DELTA_SKATING_FALLBACK_URL },
+    },
+    data: {
+      bookingUrl: DELTA_SKATING_FALLBACK_URL,
+    },
+  });
+
+  if (reservableRes.count > 0 || publicSkateRes.count > 0) {
+    console.log(
+      `Cleaned Delta URLs in DB: ${reservableRes.count} reservable sessions -> registration portal, ${publicSkateRes.count} public skate sessions -> skating schedule.`,
+    );
+  }
+}
+
 async function once() {
   try {
     const report = await runIngestion(prisma, opts);
     await sanitizeRichmondRows(prisma);
+    await sanitizeDeltaRows(prisma);
     console.table(report.results.map(({ error, ...r }) => ({ ...r, error: error?.slice(0, 60) ?? "" })));
     return report.status;
   } catch (err) {

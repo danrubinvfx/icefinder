@@ -147,22 +147,41 @@ export function getRichmondFallbackUrl(
 }
 
 // ── Delta (PerfectMind) ─────────────────────────────────────────────────
-export const DELTA_PERFECTMIND_SKATING_CALENDAR_URL =
-  "https://cityofdelta.perfectmind.com/24184/Clients/BookMe4BookingPages/Classes?calendarId=89ffcb0c-a63e-4d51-8743-1629fa2a5a51&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
+export const DELTA_PERFECTMIND_REGISTRATION_URL =
+  "https://cityofdelta.perfectmind.com/24140/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+
+export const DELTA_SKATING_FALLBACK_URL =
+  "https://www.delta.ca/community-culture/recreation-activities/skating-ice-sports";
 
 export const DELTA_ONLINE_REGISTRATION_URL =
-  DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
+  DELTA_PERFECTMIND_REGISTRATION_URL;
+
+export const DELTA_PERFECTMIND_SKATING_CALENDAR_URL =
+  DELTA_PERFECTMIND_REGISTRATION_URL;
 
 export const DELTA_FACILITY_URLS: Record<string, string> = {
-  "north-delta": DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
-  sungod: DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
-  "south-delta": DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
-  tilbury: DELTA_PERFECTMIND_SKATING_CALENDAR_URL,
+  "north-delta": DELTA_PERFECTMIND_REGISTRATION_URL,
+  sungod: DELTA_PERFECTMIND_REGISTRATION_URL,
+  "south-delta": DELTA_PERFECTMIND_REGISTRATION_URL,
+  tilbury: DELTA_PERFECTMIND_REGISTRATION_URL,
 };
 
-export function getDeltaUrl(facilitySlug?: string | null): string {
+export function getDeltaUrl(
+  categoryOrSlug?: Category | string | null,
+  facilitySlug?: string | null,
+): string {
   void facilitySlug;
-  return DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
+  if (categoryOrSlug === "public_skate") {
+    return DELTA_SKATING_FALLBACK_URL;
+  }
+  return DELTA_PERFECTMIND_REGISTRATION_URL;
+}
+
+export function getDeltaFallbackUrl(
+  category?: Category | string,
+  facilitySlug?: string | null,
+): string {
+  return getDeltaUrl(category, facilitySlug);
 }
 
 /**
@@ -243,13 +262,17 @@ export function resolveBookingUrl(opts: {
 
   // Delta (PerfectMind)
   if (municipality === "Delta" || (facilitySlug && ["north-delta", "sungod", "south-delta", "tilbury"].includes(facilitySlug))) {
+    if (category === "public_skate" || source === "schedule") {
+      return DELTA_SKATING_FALLBACK_URL;
+    }
     if (
       !bookingUrl ||
-      bookingUrl.includes("24140") ||
-      bookingUrl.includes("delta.ca") ||
-      bookingUrl.includes("/Clients/BookMe4?")
+      bookingUrl.includes("BookMe4BookingPages") ||
+      bookingUrl.includes("calendarId=") ||
+      bookingUrl.includes("24184") ||
+      bookingUrl.includes("delta.ca")
     ) {
-      return DELTA_PERFECTMIND_SKATING_CALENDAR_URL;
+      return DELTA_PERFECTMIND_REGISTRATION_URL;
     }
     return bookingUrl;
   }
