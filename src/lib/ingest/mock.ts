@@ -9,7 +9,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { FACILITIES, TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { getBurnabyFallbackUrl, CANLAN_PROGRAMS_FALLBACK } from "../links";
+import { getBurnabyFallbackUrl, getBurnabyPublicSkateUrl, CANLAN_PROGRAMS_FALLBACK } from "../links";
 import type { IngestWindow, NormalizedSession } from "./types";
 
 interface Template {
@@ -89,7 +89,10 @@ function bookingUrlFor(
   if (facility.bookingPlatform === "canlan") {
     return CANLAN_PROGRAMS_FALLBACK;
   }
-  return getBurnabyFallbackUrl(category);
+  if (category === "public_skate") {
+    return getBurnabyPublicSkateUrl(facility.slug);
+  }
+  return getBurnabyFallbackUrl(category, facility.slug);
 }
 
 function expand(

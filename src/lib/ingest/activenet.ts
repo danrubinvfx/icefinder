@@ -9,7 +9,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { getBurnabyDetailUrl, getBurnabyFallbackUrl, BURNABY_DAILY_ACTIVITIES_URL } from "../links";
+import { getBurnabyDetailUrl, getBurnabyFallbackUrl, getBurnabyPublicSkateUrl } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -158,11 +158,11 @@ export async function collectActiveNet(
     const numericActivityId = typeof item.id === "number" ? item.id : Number(item.id) || null;
     let directUrl: string;
     if (category === "public_skate") {
-      directUrl = BURNABY_DAILY_ACTIVITIES_URL;
+      directUrl = getBurnabyPublicSkateUrl(facility.slug);
     } else if (numericActivityId) {
       directUrl = getBurnabyDetailUrl(numericActivityId);
     } else {
-      directUrl = getBurnabyFallbackUrl(category);
+      directUrl = getBurnabyFallbackUrl(category, facility.slug);
     }
 
     sessions.set(key, {

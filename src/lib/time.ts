@@ -6,10 +6,12 @@ const ymdFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "num
 const timeFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", minute: "2-digit" });
 const dayFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, weekday: "long", month: "short", day: "numeric" });
 const dowFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, weekday: "short" });
+const dayNumFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, day: "numeric" });
 
 export const localYmd = (d: Date | string) => ymdFmt.format(new Date(d));
 export const formatTime = (d: Date | string) => timeFmt.format(new Date(d));
 export const formatDayHeading = (d: Date | string) => dayFmt.format(new Date(d));
+export const formatDayNumber = (d: Date | string) => dayNumFmt.format(new Date(d));
 
 const hourFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", hourCycle: "h23" });
 export const localHour = (d: Date | string) => Number(hourFmt.format(new Date(d)));

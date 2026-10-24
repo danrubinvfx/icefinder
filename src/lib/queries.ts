@@ -86,7 +86,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         goalieSpots: s.goalieSpots,
         goaliesRegistered: s.goaliesRegistered,
         cost: s.cost,
-        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category),
+        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category, s.facilitySlug),
         source: s.source,
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,

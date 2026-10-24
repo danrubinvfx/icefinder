@@ -6,11 +6,20 @@ import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2 } from "lucide-react";
 import { CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/domain";
 import type { FeedPayload, SessionDTO } from "@/lib/queries";
-import { addDaysYmd, formatDayHeading, formatTime, localYmd, relativeTime, weekendDays } from "@/lib/time";
+import {
+  addDaysYmd,
+  formatDayHeading,
+  formatDayNumber,
+  formatTime,
+  localYmd,
+  relativeTime,
+  shortDow,
+  weekendDays,
+} from "@/lib/time";
 import { SessionCard, goalieNeeded } from "./SessionCard";
 import { SponsorCard } from "./SponsorCard";
 
-type DateMode = "today" | "tomorrow" | "weekend" | "pick";
+type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
 type CategoryFilter = "all" | Category;
 
 const REFRESH_MS = 60_000;
@@ -141,6 +150,10 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
         return [today];
       case "tomorrow":
         return [addDaysYmd(today, 1)];
+      case "3days":
+        return [0, 1, 2].map((i) => addDaysYmd(today, i));
+      case "week":
+        return [0, 1, 2, 3, 4, 5, 6].map((i) => addDaysYmd(today, i));
       case "weekend":
         return weekendDays(today);
       case "pick":
@@ -197,6 +210,16 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
     return [...map.entries()];
   }, [visible]);
 
+  // Per-day counts for the quick ribbon in week/multi-day views
+  const dayCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const d of selectedDays) counts[d] = 0;
+    for (const { day } of visible) {
+      if (counts[day] !== undefined) counts[day]++;
+    }
+    return counts;
+  }, [selectedDays, visible]);
+
   const lastSyncAt = feed.lastSync?.at;
   const syncAgeMin = lastSyncAt ? (now - new Date(lastSyncAt).getTime()) / 60_000 : Infinity;
   const syncTone = syncAgeMin < 30 ? "fresh" : syncAgeMin < 180 ? "stale" : "old";
@@ -224,6 +247,15 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
     setFacility("all");
   };
 
+  const scrollToDay = (day: string) => {
+    const el = document.getElementById(`day-${day}`);
+    if (el) {
+      const yOffset = -150;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: "smooth" });
+    }
+  };
+
   let cardIndex = 0;
   const sponsorAfter = Math.min(2, Math.max(visible.length - 1, 0));
 
@@ -233,39 +265,48 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur supports-[backdrop-filter]:bg-slate-50/75">
         <div className="flex h-14 items-center gap-3 px-4">
           <Link href="/" className="flex items-center gap-2" aria-label="IceFinder home">
-            <span className="grid size-8 place-items-center rounded-lg bg-ice-900 text-sky-300">
+            <span className="grid size-9 place-items-center rounded-xl bg-ice-600 text-white shadow-sm ring-1 ring-ice-700/20">
               <Snowflake className="size-5" aria-hidden />
             </span>
-            <span className="text-lg font-extrabold tracking-tight text-ice-900">
-              Ice<span className="text-ice-600">Finder</span>
-            </span>
+            <div className="leading-tight">
+              <span className="text-base font-extrabold tracking-tight text-slate-900">IceFinder</span>
+              <span className="ml-1.5 hidden text-xs font-semibold text-slate-400 min-[420px]:inline">Metro Van</span>
+            </div>
           </Link>
 
-          <label className="relative ml-1 hidden items-center sm:flex">
-            <span className="sr-only">Location</span>
-            <MapPin className="pointer-events-none absolute left-2.5 size-4 text-slate-400" aria-hidden />
-            <select
-              defaultValue="burnaby"
-              className="h-9 appearance-none rounded-full bg-white pl-8 pr-8 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ice-500"
-            >
-              {LOCATIONS.map((l) => (
-                <option key={l.value} value={l.value} disabled={!l.enabled}>
-                  {l.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2.5 size-4 text-slate-400" aria-hidden />
-          </label>
+          {/* Desktop location selector */}
+          <div className="hidden items-center gap-1.5 text-sm sm:flex">
+            <MapPin className="size-4 text-ice-600" aria-hidden />
+            <label className="relative">
+              <span className="sr-only">Location</span>
+              <select
+                defaultValue="burnaby"
+                className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none"
+              >
+                {LOCATIONS.map((l) => (
+                  <option key={l.value} value={l.value} disabled={!l.enabled}>
+                    {l.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            </label>
+          </div>
 
+          <div className="flex-1" />
+
+          {/* Refresh / sync button */}
           <button
             type="button"
             onClick={refresh}
-            className="ml-auto inline-flex h-8 items-center gap-2 rounded-full bg-white px-3 text-xs font-medium text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
-            title={lastSyncAt ? `Last sync ${new Date(lastSyncAt).toLocaleString("en-CA", { timeZone: "America/Vancouver" })}` : "No sync yet"}
+            disabled={refreshing}
+            title={lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
+            aria-label="Refresh feed"
+            className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500"
           >
             <span
               className={`size-2 rounded-full ${
-                syncTone === "fresh" ? "live-dot bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-400"
+                syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-400"
               }`}
               aria-hidden
             />
@@ -301,13 +342,19 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           </label>
         </div>
 
-        {/* Date pills */}
-        <nav aria-label="Date" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
+        {/* Date / Timeframe pills */}
+        <nav aria-label="Timeframe" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
           <Pill active={dateMode === "today"} onClick={() => setDateMode("today")}>
             Today
           </Pill>
           <Pill active={dateMode === "tomorrow"} onClick={() => setDateMode("tomorrow")}>
             Tomorrow
+          </Pill>
+          <Pill active={dateMode === "3days"} onClick={() => setDateMode("3days")}>
+            Next 3 Days
+          </Pill>
+          <Pill active={dateMode === "week"} onClick={() => setDateMode("week")}>
+            Next 7 Days
           </Pill>
           <Pill active={dateMode === "weekend"} onClick={() => setDateMode("weekend")}>
             This Weekend
@@ -377,9 +424,52 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
 
       {/* ── Feed ─────────────────────────────────────────────── */}
       <main className="space-y-6 px-4 pt-4">
+        {/* Quick Day-Selector Ribbon for 7-Day / Multi-Day View */}
+        {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (
+          <div className="sticky top-14 z-10 -mx-4 border-b border-slate-200/80 bg-slate-50/95 px-4 py-2 backdrop-blur">
+            <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
+              <span className="shrink-0 pr-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Jump to:
+              </span>
+              {selectedDays.map((d) => {
+                const count = dayCounts[d] ?? 0;
+                const dObj = new Date(`${d}T12:00:00Z`);
+                const isToday = d === today;
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => scrollToDay(d)}
+                    disabled={count === 0}
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+                      count > 0
+                        ? "border-slate-200 bg-white text-slate-800 shadow-2xs hover:border-ice-400 hover:bg-ice-50/60 active:scale-95"
+                        : "border-slate-100 bg-slate-100/60 text-slate-400 opacity-60 cursor-not-allowed"
+                    }`}
+                  >
+                    <span className="text-[11px] font-bold uppercase text-slate-500">{shortDow(dObj)}</span>
+                    <span className="font-bold tabular-nums text-slate-900">{formatDayNumber(dObj)}</span>
+                    {isToday && (
+                      <span className="rounded-full bg-ice-100 px-1 text-[10px] font-bold text-ice-700">Today</span>
+                    )}
+                    <span
+                      className={`min-w-4 rounded-full px-1 text-center text-[10px] font-bold tabular-nums ${
+                        count > 0 ? "bg-emerald-100 text-emerald-800" : "bg-slate-200 text-slate-500"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <p className="text-xs font-medium text-slate-500" aria-live="polite">
           {visible.length} session{visible.length === 1 ? "" : "s"}
           {goalieOnly ? " needing a goalie" : ""} · {feed.facilities.length} Burnaby arenas
+          {dateMode === "week" ? " · Next 7 Days" : dateMode === "3days" ? " · Next 3 Days" : ""}
         </p>
 
         {groups.length === 0 ? (
@@ -387,23 +477,43 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
             <SearchX className="size-8 text-slate-400" aria-hidden />
             <p className="font-semibold text-slate-800">No ice matches those filters</p>
             <p className="max-w-xs text-sm text-slate-500">
-              Try another day, switch arenas, or turn off &ldquo;Open Spots Only&rdquo;.
+              {dateMode === "today"
+                ? "Today's sessions may have already finished for the day. Check the upcoming week or switch filters."
+                : "Try another timeframe, switch arenas, or turn off \u201cOpen Spots Only\u201d."}
             </p>
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="mt-1 h-9 rounded-full bg-ice-900 px-4 text-sm font-semibold text-white hover:bg-ice-700"
-            >
-              Reset filters
-            </button>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+              {dateMode === "today" && (
+                <button
+                  type="button"
+                  onClick={() => setDateMode("week")}
+                  className="h-9 rounded-full bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-ice-700"
+                >
+                  View Next 7 Days
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="h-9 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700"
+              >
+                Reset filters
+              </button>
+            </div>
           </div>
         ) : (
           groups.map(([day, sessions]) => (
             <section key={day} aria-labelledby={`day-${day}`} className="space-y-3">
               {(groups.length > 1 || dateMode !== "today") && (
-                <h2 id={`day-${day}`} className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                  {day === today ? "Today" : formatDayHeading(sessions[0].startTime)}
-                </h2>
+                <div id={`day-${day}`} className="scroll-mt-36 pt-2 pb-1">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800">
+                      {day === today ? `Today · ${formatDayHeading(sessions[0].startTime)}` : formatDayHeading(sessions[0].startTime)}
+                    </h2>
+                    <span className="text-xs font-semibold text-slate-400">
+                      {sessions.length} session{sessions.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                </div>
               )}
               {sessions.map((s) => {
                 const i = cardIndex++;
