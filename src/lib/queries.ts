@@ -3,7 +3,7 @@ import { prisma } from "./db";
 import { FACILITIES, FACILITY_SHORT_NAME, type Category } from "./domain";
 import { mockSessionsFor, publicSkateScheduleFor } from "./ingest/mock";
 import { sessionKey } from "./normalize";
-import { resolveBookingUrl, getBurnabyFallbackUrl } from "./links";
+import { resolveBookingUrl, getBurnabyFallbackUrl, BURNABY_FACILITY_CENTER_IDS } from "./links";
 
 export interface SessionDTO {
   id: string;
@@ -86,7 +86,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         goalieSpots: s.goalieSpots,
         goaliesRegistered: s.goaliesRegistered,
         cost: s.cost,
-        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category, s.facilitySlug === "rosemary-brown" ? 180 : s.facilitySlug === "bill-copeland" ? 56 : undefined),
+        bookingUrl: s.bookingUrl || getBurnabyFallbackUrl(s.category, BURNABY_FACILITY_CENTER_IDS[s.facilitySlug]),
         source: s.source,
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
@@ -171,6 +171,7 @@ export async function getFeed(): Promise<FeedPayload> {
             activityId: r.activityId,
             externalId: r.externalId,
             facilitySlug: r.facility.slug,
+            source: r.source,
           }),
           source: r.source,
           activityId: r.activityId ?? null,

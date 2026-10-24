@@ -10,33 +10,34 @@ export function getBurnabyDetailUrl(activityId: number | string): string {
 }
 
 /**
- * Fallback link when numeric activity ID is not available.
+ * Fallback link when numeric activity ID is not available or when rendering mock/cached data.
  * Uses ActiveNet's exact query parameters that enforce the search filter (`activity_select_param=2`)
- * so ActiveNet does not drop keywords and show unfiltered recreation results.
+ * and arena center_ids so ActiveNet does not drop keywords or show unrelated recreation activities.
  */
 export function getBurnabyFallbackUrl(
   category?: Category | string,
   centerId?: number | string | null
 ): string {
-  let keyword = "skate";
+  let keyword = "public skate";
   if (category === "figure_buyon") {
     keyword = "figure skating reserve";
   } else if (category === "hockey_dropin" || category === "stick_and_puck") {
     keyword = "hockey reserve";
   } else if (category === "public_skate") {
-    keyword = "skate";
+    keyword = "public skate";
   }
 
   const encodedKeyword = encodeURIComponent(keyword);
   let url = `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=${encodedKeyword}&viewMode=list`;
 
-  if (centerId && category !== "figure_buyon") {
+  if (centerId) {
     url += `&center_ids=${centerId}`;
   }
   return url;
 }
 
-const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
+export const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
+  "kensington": 147,
   "rosemary-brown": 180,
   "bill-copeland": 56,
 };
@@ -45,12 +46,10 @@ const BURNABY_FACILITY_CENTER_IDS: Record<string, number> = {
  * Robust link resolver for UI components and serializers.
  * - For Canlan / DaySmart: preserves the direct DaySmart link.
  * - For Burnaby:
- *   1. Intercepts cancelled placeholder #111580 and points to verified Kensington figure skating #138467.
- *   2. If explicit activityId exists, returns direct detail deep-link.
- *   3. If externalId has numeric ID (e.g. "activenet:123456"), returns direct detail deep-link.
- *   4. If bookingUrl has numeric activity ID in path, converts to direct detail deep-link.
- *   5. If URL has query params with specific keywords or is a search page, replaces with working fallback
- *      including activity_select_param=2 and arena center_ids.
+ *   1. Only construct a `/detail/{id}` URL when the ID is freshly parsed directly
+ *      from a live API response in the current sweep (`source === 'live'`).
+ *   2. For mock, cached, or fallback sessions, always use verified category reserve queries
+ *      with facility-specific center_ids to avoid stale ID redirects (e.g. into yoga classes).
  */
 export function resolveBookingUrl(opts: {
   bookingUrl?: string | null;
@@ -60,35 +59,13 @@ export function resolveBookingUrl(opts: {
   externalId?: string | null;
   facilitySlug?: string | null;
   centerId?: number | string | null;
+  source?: string | null;
 }): string {
-  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug } = opts;
+  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug, source } = opts;
 
   // Preserve Canlan / DaySmart URLs
   if (bookingPlatform === "canlan" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
     return bookingUrl || "https://www.canlansports.com/";
-  }
-
-  // Intercept cancelled placeholder #111580 and replace with verified Kensington figure skating #138467
-  if (
-    activityId === 111580 ||
-    String(activityId) === "111580" ||
-    (externalId && externalId.includes("111580")) ||
-    (bookingUrl && bookingUrl.includes("111580"))
-  ) {
-    return getBurnabyDetailUrl(138467);
-  }
-
-  // 1. Direct numeric activityId
-  if (activityId) {
-    return getBurnabyDetailUrl(activityId);
-  }
-
-  // 2. Extract numeric ID from externalId if present (e.g. "activenet:123456")
-  if (externalId) {
-    const m = externalId.match(/activenet:(\d+)/i);
-    if (m) {
-      return getBurnabyDetailUrl(m[1]);
-    }
   }
 
   // Determine center ID from opts or facility slug
@@ -97,33 +74,40 @@ export function resolveBookingUrl(opts: {
     centerId = BURNABY_FACILITY_CENTER_IDS[facilitySlug];
   }
 
-  // 3. Extract numeric ID from existing URL if present
-  if (bookingUrl) {
-    const detailMatch = bookingUrl.match(/(?:\/detail\/|\/Activity_Search\/[^/]+\/)(\d+)/i);
-    if (detailMatch) {
-      return getBurnabyDetailUrl(detailMatch[1]);
-    }
-
-    // Check if the URL has center_ids already
-    if (!centerId) {
-      const centerMatch = bookingUrl.match(/center_ids=(\d+)/i);
-      if (centerMatch) {
-        centerId = centerMatch[1];
-      }
-    }
-
-    // 4. If URL is a search URL (or contains activity_keyword or bare search), sanitize it to have activity_select_param=2
-    if (
-      bookingUrl.includes("activity_keyword=") ||
-      bookingUrl.includes("search?") ||
-      bookingUrl.endsWith("/search")
-    ) {
-      return getBurnabyFallbackUrl(category, centerId);
-    }
-
-    return bookingUrl;
+  // For mock or schedule fallback data, ALWAYS use verified category reserve query
+  if (source === "mock" || source === "schedule") {
+    return getBurnabyFallbackUrl(category, centerId);
   }
 
-  // General fallback by category & center
-  return getBurnabyFallbackUrl(category, centerId);
+  // Only use numeric /detail/{id} when verified live
+  if (source === "live") {
+    if (activityId) {
+      return getBurnabyDetailUrl(activityId);
+    }
+    if (externalId) {
+      const m = externalId.match(/activenet:(\d+)/i);
+      if (m) {
+        return getBurnabyDetailUrl(m[1]);
+      }
+    }
+  }
+
+  // If URL has broken keywords, search params, or brittle mock detail IDs, sanitize to fallback query
+  if (
+    !bookingUrl ||
+    bookingUrl.includes("activity_keyword=") ||
+    bookingUrl.includes("search?") ||
+    bookingUrl.endsWith("/search") ||
+    bookingUrl.includes("/detail/138467") ||
+    bookingUrl.includes("/detail/111580") ||
+    bookingUrl.includes("/detail/124539")
+  ) {
+    return getBurnabyFallbackUrl(category, centerId);
+  }
+
+  if (activityId && source === "live") {
+    return getBurnabyDetailUrl(activityId);
+  }
+
+  return bookingUrl;
 }
