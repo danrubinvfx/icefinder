@@ -95,8 +95,14 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
     }
   }
 
-  // Sort chronologically
-  sessions.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  // Sort chronologically; prioritize figure_buyon when start times match
+  sessions.sort((a, b) => {
+    const diff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+    if (diff !== 0) return diff;
+    const prioA = a.category === "figure_buyon" ? 0 : 1;
+    const prioB = b.category === "figure_buyon" ? 0 : 1;
+    return prioA - prioB;
+  });
 
   return {
     sessions,
@@ -132,8 +138,15 @@ export async function getFeed(): Promise<FeedPayload> {
 
     // If database returned data, use it
     if (rows.length > 0 && facilities.length > 0) {
+      const sortedRows = [...rows].sort((a, b) => {
+        const diff = a.startTime.getTime() - b.startTime.getTime();
+        if (diff !== 0) return diff;
+        const prioA = a.category === "figure_buyon" ? 0 : 1;
+        const prioB = b.category === "figure_buyon" ? 0 : 1;
+        return prioA - prioB;
+      });
       return {
-        sessions: rows.map((r) => ({
+        sessions: sortedRows.map((r) => ({
           id: r.id,
           facilitySlug: r.facility.slug,
           facilityName: r.facility.name,

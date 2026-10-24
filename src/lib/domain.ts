@@ -4,25 +4,25 @@
  */
 
 export const CATEGORIES = [
+  "figure_buyon",
   "hockey_dropin",
   "stick_and_puck",
-  "figure_buyon",
   "public_skate",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 
 export const CATEGORY_LABELS: Record<Category, string> = {
+  figure_buyon: "Figure Skating Buy-ons",
   hockey_dropin: "Hockey Drop-in",
   stick_and_puck: "Stick & Puck",
-  figure_buyon: "Figure Skating Buy-ons",
   public_skate: "Public Skate",
 };
 
 export const CATEGORY_SHORT: Record<Category, string> = {
+  figure_buyon: "Figure Buy-on",
   hockey_dropin: "Drop-in Hockey",
   stick_and_puck: "Stick & Puck",
-  figure_buyon: "Figure Buy-on",
   public_skate: "Public Skate",
 };
 

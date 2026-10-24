@@ -7,9 +7,9 @@ import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
 
 const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }> = {
+  figure_buyon: { bar: "bg-pink-500", text: "text-pink-700 ring-1 ring-pink-300/80 font-bold", bg: "bg-pink-50" },
   hockey_dropin: { bar: "bg-ice-600", text: "text-ice-700", bg: "bg-ice-50" },
   stick_and_puck: { bar: "bg-violet-500", text: "text-violet-700", bg: "bg-violet-50" },
-  figure_buyon: { bar: "bg-pink-500", text: "text-pink-700", bg: "bg-pink-50" },
   public_skate: { bar: "bg-teal-500", text: "text-teal-700", bg: "bg-teal-50" },
 };
 

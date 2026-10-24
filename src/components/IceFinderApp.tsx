@@ -173,6 +173,16 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       if (!map.has(day)) map.set(day, []);
       map.get(day)!.push(s);
     }
+    // Sort each day block: strictly chronological, prioritizing figure_buyon when start times match
+    for (const list of map.values()) {
+      list.sort((a, b) => {
+        const diff = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        if (diff !== 0) return diff;
+        const prioA = a.category === "figure_buyon" ? 0 : 1;
+        const prioB = b.category === "figure_buyon" ? 0 : 1;
+        return prioA - prioB;
+      });
+    }
     return [...map.entries()];
   }, [visible]);
 
