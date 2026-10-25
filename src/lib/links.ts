@@ -9,6 +9,12 @@ export function getCanlanEventUrl(eventId: number | string): string {
 }
 
 // ── Burnaby (ActiveNet) ──────────────────────────────────────────────────
+export const BURNABY_CENTER_IDS: Record<string, number> = {
+  "rosemary-brown": 180,
+  kensington: 147,
+  "bill-copeland": 146,
+};
+
 export const BURNABY_FACILITY_URLS: Record<string, string> = {
   "rosemary-brown":
     "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=180&viewMode=list",
@@ -30,11 +36,28 @@ export const BURNABY_FIGURE_SKATING_RESERVE_URL =
 export const BURNABY_HOCKEY_RESERVE_URL =
   "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&viewMode=list";
 
-export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
-  if (facilitySlug && BURNABY_FACILITY_URLS[facilitySlug]) {
-    return BURNABY_FACILITY_URLS[facilitySlug];
+export function getBurnabyCenterId(facilitySlug?: string | null): number | undefined {
+  if (!facilitySlug) return undefined;
+  return BURNABY_CENTER_IDS[facilitySlug];
+}
+
+export function getBurnabyCategoryUrl(category: Category | string, facilitySlug?: string | null): string {
+  const centerId = getBurnabyCenterId(facilitySlug);
+  const centerParam = centerId ? `&center_ids=${centerId}` : "";
+
+  if (category === "figure_buyon") {
+    return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=figure%20skating%20reserve${centerParam}&viewMode=list`;
   }
-  return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
+  if (category === "hockey_dropin" || category === "stick_and_puck") {
+    return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve${centerParam}&viewMode=list`;
+  }
+  return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate${centerParam}&viewMode=list`;
+}
+
+export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
+  const centerId = getBurnabyCenterId(facilitySlug);
+  const centerParam = centerId ? `&center_ids=${centerId}` : "";
+  return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate${centerParam}&viewMode=list`;
 }
 
 export function getBurnabyDetailUrl(activityId: number | string): string {
@@ -46,16 +69,27 @@ export function getBurnabyFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  if (category === "figure_buyon") {
-    return BURNABY_FIGURE_SKATING_RESERVE_URL;
+  if (category) {
+    return getBurnabyCategoryUrl(category, facilitySlug);
   }
-  if (category === "hockey_dropin" || category === "stick_and_puck") {
-    return BURNABY_HOCKEY_RESERVE_URL;
-  }
-  if (facilitySlug && BURNABY_FACILITY_URLS[facilitySlug]) {
-    return BURNABY_FACILITY_URLS[facilitySlug];
+  const centerId = getBurnabyCenterId(facilitySlug);
+  if (centerId) {
+    return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate&center_ids=${centerId}&viewMode=list`;
   }
   return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
+}
+
+export function getBurnabyUrl(opts: {
+  category?: Category | string;
+  activityId?: number | string | null;
+  externalId?: string | null;
+  facilitySlug?: string | null;
+}): string {
+  const rawId = opts.activityId ?? (opts.externalId ? opts.externalId.replace(/\D/g, "") : null);
+  if (rawId) {
+    return getBurnabyDetailUrl(rawId);
+  }
+  return getBurnabyFallbackUrl(opts.category, opts.facilitySlug);
 }
 
 // ── Vancouver (Park Board ActiveNet) ────────────────────────────────────
@@ -244,14 +278,5 @@ export function resolveBookingUrl(opts: {
   if (burnabyId) {
     return getBurnabyDetailUrl(burnabyId);
   }
-  if (category === "figure_buyon") {
-    return BURNABY_FIGURE_SKATING_RESERVE_URL;
-  }
-  if (category === "hockey_dropin" || category === "stick_and_puck") {
-    return BURNABY_HOCKEY_RESERVE_URL;
-  }
-  if (category === "public_skate" || facilitySlug) {
-    return getBurnabyPublicSkateUrl(facilitySlug);
-  }
-  return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
+  return getBurnabyFallbackUrl(category, facilitySlug);
 }
