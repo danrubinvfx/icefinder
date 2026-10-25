@@ -110,6 +110,15 @@ export function getBurnabyUrl(opts: {
 }
 
 // ── Vancouver (Park Board ActiveNet) ────────────────────────────────────
+export const VANCOUVER_CENTER_IDS: Record<string, number> = {
+  britannia: 24,
+  hillcrest: 22,
+  killarney: 25,
+  kitsilano: 26,
+  sunset: 27,
+  "trout-lake": 28,
+};
+
 export const VANCOUVER_DROPIN_CALENDAR_URL =
   "https://anc.ca.apm.activecommunities.com/vancouver/calendars?onlineSiteId=0&no_scroll_top=true&defaultCalendarId=3&displayType=0&view=2";
 
@@ -125,17 +134,36 @@ export const VANCOUVER_FACILITY_SCHEDULE_URLS: Record<string, string> = {
   killarney: VANCOUVER_DROPIN_CALENDAR_URL,
 };
 
-export function getVancouverDetailUrl(activityId: number | string): string {
+export function getVancouverCenterId(facilitySlug?: string | null): number | undefined {
+  if (!facilitySlug) return undefined;
+  return VANCOUVER_CENTER_IDS[facilitySlug];
+}
+
+export function getVancouverFacilitySearchUrl(facilitySlug?: string | null): string {
+  const centerId = getVancouverCenterId(facilitySlug);
+  if (centerId) {
+    return `https://anc.ca.apm.activecommunities.com/vancouver/activity/search?onlineSiteId=0&center_ids=${centerId}&viewMode=list`;
+  }
+  return VANCOUVER_SEARCH_FALLBACK;
+}
+
+export function getVancouverDetailUrl(activityId: number | string, facilitySlug?: string | null): string {
   const cleanId = String(activityId).replace(/^activenet:/i, "").trim();
-  return `https://anc.ca.apm.activecommunities.com/vancouver/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true`;
+  const centerId = getVancouverCenterId(facilitySlug);
+  const centerParam = centerId ? `&center_ids=${centerId}` : "";
+  return `https://anc.ca.apm.activecommunities.com/vancouver/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true${centerParam}`;
 }
 
 export function getVancouverFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  void category;
-  void facilitySlug;
+  if (category === "public_skate") {
+    return VANCOUVER_DROPIN_CALENDAR_URL;
+  }
+  if (facilitySlug && VANCOUVER_CENTER_IDS[facilitySlug]) {
+    return getVancouverFacilitySearchUrl(facilitySlug);
+  }
   return VANCOUVER_DROPIN_CALENDAR_URL;
 }
 
@@ -296,11 +324,18 @@ export function resolveBookingUrl(opts: {
 
   // 2. City of Vancouver (ActiveNet)
   if (municipality === "Vancouver" || (facilitySlug && ["britannia", "hillcrest", "kitsilano", "trout-lake", "sunset", "killarney"].includes(facilitySlug))) {
-    const rawId = activityId ?? (rawExternalId ? rawExternalId.replace(/\D/g, "") : null);
-    if (rawId) {
-      return getVancouverDetailUrl(rawId);
+    if (category === "public_skate") {
+      return VANCOUVER_DROPIN_CALENDAR_URL;
     }
-    return VANCOUVER_DROPIN_CALENDAR_URL;
+    const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
+    const rawId =
+      activityId ??
+      (rawExternalId ? rawExternalId.replace(/\D/g, "") : null) ??
+      (detailMatch ? detailMatch[1] : null);
+    if (rawId) {
+      return getVancouverDetailUrl(rawId, facilitySlug);
+    }
+    return getVancouverFallbackUrl(category, facilitySlug);
   }
 
   // 3. Richmond (PerfectMind)

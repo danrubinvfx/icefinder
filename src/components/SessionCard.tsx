@@ -87,6 +87,9 @@ export function parseDivisionChips(s: SessionDTO): DivisionChip[] {
 }
 
 function getRequirementBadgeStyle(req: string): string {
+  if (req === "Women+ / 19+") {
+    return "bg-purple-50 text-purple-800 ring-1 ring-purple-200 font-bold";
+  }
   if (req === "Figure Skates Only" || req === "Prior Experience Required" || req === "No Coaches Allowed") {
     return "bg-rose-50 text-rose-800 ring-1 ring-rose-200 font-bold";
   }

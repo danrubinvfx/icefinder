@@ -71,12 +71,14 @@ function collectorFor(f: FacilitySeed) {
 function mergeByKey(...lists: NormalizedSession[][]): NormalizedSession[] {
   const map = new Map<string, NormalizedSession>();
   const liveDayCategory = new Set<string>();
+  const liveFacilityCategory = new Set<string>();
 
   for (const list of lists) {
     for (const s of list) {
       if (s.source === "live") {
         const ymd = s.startTime.toLocaleDateString("en-CA", { timeZone: "America/Vancouver" });
         liveDayCategory.add(`${s.facilitySlug}|${ymd}|${s.category}`);
+        liveFacilityCategory.add(`${s.facilitySlug}|${s.category}`);
       }
     }
   }
@@ -85,7 +87,10 @@ function mergeByKey(...lists: NormalizedSession[][]): NormalizedSession[] {
     for (const s of list) {
       if (s.source === "schedule") {
         const ymd = s.startTime.toLocaleDateString("en-CA", { timeZone: "America/Vancouver" });
-        if (liveDayCategory.has(`${s.facilitySlug}|${ymd}|${s.category}`)) {
+        if (
+          liveDayCategory.has(`${s.facilitySlug}|${ymd}|${s.category}`) ||
+          liveFacilityCategory.has(`${s.facilitySlug}|${s.category}`)
+        ) {
           continue;
         }
       }

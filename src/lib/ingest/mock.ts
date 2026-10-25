@@ -133,8 +133,10 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
 
   // ── Vancouver ──
   britannia: [
-    { title: "Public Skate", days: [0, 6], start: "13:30", minutes: 90, capacity: 180, cost: 7.2 },
-    { title: "Discount Public Skate", days: [3], start: "15:15", minutes: 75, capacity: 180, cost: 3.5 },
+    { title: "Public Skate", days: [0], start: "14:15", minutes: 75, capacity: 180, cost: 7.2 },
+    { title: "Public Skate", days: [6], start: "13:30", minutes: 90, capacity: 180, cost: 7.2 },
+    { title: "Public Skate", days: [4], start: "18:00", minutes: 90, capacity: 180, cost: 7.2 },
+    { title: "Adult Skate", days: [2], start: "20:15", minutes: 75, capacity: 150, cost: 7.2 },
   ],
   hillcrest: [
     { title: "Public Skate", days: [1, 3, 5], start: "13:15", minutes: 90, capacity: 220, cost: 7.2 },

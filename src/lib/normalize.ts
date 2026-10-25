@@ -15,25 +15,52 @@ import type { Category } from "./domain";
 export function normalizeCategory(rawTitle: string): Category | null {
   const t = rawTitle
     .toLowerCase()
+    .replace(/^\|+|\|+$/g, "")
     .replace(/^reserve in advance:\s*/i, "")
-    .replace(/\(goalie\)/g, "")
+    .replace(/\(goalies?\)/g, "")
     .trim();
 
+  // Explicit Britannia / Vancouver drop-in overrides before general exclusions:
+  if (/\bfamily\s+fun\s+hockey\b/.test(t)) {
+    return "stick_and_puck";
+  }
+  if (/britannia\s+arena\s*-\s*women\s*\+|women\s*\+\s*gender\s*diverse.*hockey|women\s*\+.*hockey/.test(t)) {
+    return "hockey_dropin";
+  }
+  if (/discount\s+(public\s+)?skate/.test(t)) {
+    return "public_skate";
+  }
+
   // Exclusions first: lessons, programs, leagues, private rentals, and non-target sports.
-  if (/\b(lesson|blades|camp|clinic|league|ringette|floor hockey|ball hockey|intro to hockey|learn to|package|party|birthday|rental)\b/.test(t)) {
+  if (
+    /\b(lesson|lessons|blades|camp|clinic|league|vachl|ringette|floor hockey|ball hockey|intro to hockey|learn to|package|party|birthday|rental|all levels|preschool level)\b/.test(
+      t,
+    ) ||
+    /\blevel\s*\d\b/.test(t)
+  ) {
     return null;
   }
 
-  if (/stick\s*(&|and|n)\s*puck|shoot\s*(&|and|n)\s*score|stick-and-puck|stick.*ring.*puck|stick.*puck.*ring/.test(t)) {
+  if (/stick\s*(&|and|n|,)\s*puck|shoot\s*(&|and|n)\s*score|stick-and-puck|stick.*ring.*puck|stick.*puck.*ring/.test(t)) {
     return "stick_and_puck";
   }
   if (/buy[\s-]?on|figure skat|freestyle|open session champs|patch/.test(t)) {
     return "figure_buyon";
   }
-  if (/shinny|drop[\s-]?in hockey|recreational hockey|rec hockey|pick[\s-]?up hockey|adult hockey|hockey drop/.test(t)) {
+  if (
+    /shinny|drop[\s-]?in hockey|recreational hockey|rec hockey|pick[\s-]?up hockey|adult hockey|public hockey|adult fun hockey|para hockey|\b\d+\+\s*hockey|hockey drop/.test(
+      t,
+    )
+  ) {
     return "hockey_dropin";
   }
-  if (/(leisure|public|family|adult|toonie|everyone welcome|parent\s*&?\s*tot|youth|senior|55\+|discount|community)\s*skat/.test(t) || /^skat(e|ing)\b/.test(t)) {
+  if (
+    /(leisure|public|family|adult|toonie|everyone welcome|parent\s*(&|and)?\s*(tot|preschooler)|youth|senior|50\+|55\+|50 and better|discount|community)\s*skat/.test(
+      t,
+    ) ||
+    /^parent and preschooler$/.test(t) ||
+    /^skat(e|ing)\b/.test(t)
+  ) {
     return "public_skate";
   }
   return null;
@@ -41,14 +68,15 @@ export function normalizeCategory(rawTitle: string): Category | null {
 
 /** True if the raw title denotes a goalie-only roster attached to a drop-in. */
 export function isGoalieListing(rawTitle: string): boolean {
-  return /\bgoalie|goaltender\b/i.test(rawTitle);
+  return /\bgoalies?|goaltenders?\b/i.test(rawTitle);
 }
 
-/** Strip platform noise for display (e.g. "Reserve In Advance: "). */
+/** Strip platform noise for display (e.g. "Reserve In Advance: ", surrounding pipes "|...|"). */
 export function cleanTitle(rawTitle: string): string {
   return rawTitle
+    .replace(/^\|+|\|+$/g, "")
     .replace(/^reserve in advance:\s*/i, "")
-    .replace(/\s*\(goalie\)\s*/i, "")
+    .replace(/\s*\(goalies?\)\s*/i, "")
     .trim();
 }
 
@@ -116,6 +144,11 @@ export function extractSessionRequirements(
     if (!reqs.includes(tag)) reqs.push(tag);
   };
 
+  // 0. Women+ / gender diverse adult tag
+  if (/britannia\s+arena\s*-\s*women\s*\+|women\s*\+|women\s*and\s*gender\s*diverse/i.test(combined)) {
+    add("Women+ / 19+");
+  }
+
   // 1. Skate type restrictions
   if (
     /only figure skates can be worn|must wear figure skates|ice dancers and figure skaters only|recreational skates are not appropriate/i.test(
@@ -147,7 +180,11 @@ export function extractSessionRequirements(
   }
 
   // 4. Equipment & safety rules
-  if (/full hockey equipment is required|full hockey equipment.*mandatory|full equipment is mandatory/i.test(combined)) {
+  if (
+    /full hockey equipment is required|full hockey equipment.*mandatory|full equipment is mandatory|full gear is required/i.test(
+      combined,
+    )
+  ) {
     add("Full Gear Required");
   } else if (/csa approved.*helmet.*mandatory|helmets? are mandatory/i.test(combined)) {
     add("CSA Helmet Required");
