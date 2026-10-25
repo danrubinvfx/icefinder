@@ -8,7 +8,14 @@
  */
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+  sessionKey,
+} from "../normalize";
 import { getBurnabyDetailUrl, getBurnabyFallbackUrl, getBurnabyPublicSkateUrl } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -25,6 +32,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 interface ActiveNetItem {
   id: number;
   name: string;
+  desc?: string;
+  description?: string;
+  notes?: string;
   site: string;
   category: string;
   date_range_start: string; // YYYY-MM-DD
@@ -169,6 +179,10 @@ export async function collectActiveNet(
         ? getBurnabyDetailUrl(numericActivityId)
         : getBurnabyFallbackUrl(category, facility.slug);
 
+    const rawDesc = item.desc ?? item.description ?? item.notes ?? null;
+    const notes = sanitizeSessionNotes(rawDesc);
+    const requirements = extractSessionRequirements(rawDesc, item.name);
+
     sessions.set(key, {
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(item.name),
@@ -187,6 +201,8 @@ export async function collectActiveNet(
       source: "live",
       activityId: numericActivityId,
       externalId: numericActivityId ? `activenet:${numericActivityId}` : null,
+      requirements,
+      notes,
     });
   }
 

@@ -216,6 +216,8 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
             cost: s.cost,
             source: s.source,
             externalId: s.externalId,
+            requirements: s.requirements ?? [],
+            notes: s.notes ?? null,
           },
           create: {
             id,
@@ -236,6 +238,8 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
             activityId: s.activityId,
             source: s.source,
             externalId: s.externalId,
+            requirements: s.requirements ?? [],
+            notes: s.notes ?? null,
           },
         });
         if (existing) result.updated++;

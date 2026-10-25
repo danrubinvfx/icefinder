@@ -17,6 +17,7 @@ import {
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
 } from "../src/lib/links";
+import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
 
 function arg(name: string): string | undefined {
@@ -89,10 +90,23 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
             source: s.source,
           });
 
-    if (s.bookingUrl !== cleanUrl) {
+    const cleanNotes = sanitizeSessionNotes(s.notes);
+    const derivedReqs = extractSessionRequirements(cleanNotes, s.rawTitle);
+    const mergedReqs = Array.from(new Set([...(s.requirements ?? []), ...derivedReqs]));
+
+    const needsUrlUpdate = s.bookingUrl !== cleanUrl;
+    const needsNotesUpdate = (s.notes ?? null) !== cleanNotes;
+    const needsReqsUpdate =
+      JSON.stringify(s.requirements ?? []) !== JSON.stringify(mergedReqs);
+
+    if (needsUrlUpdate || needsNotesUpdate || needsReqsUpdate) {
       await prismaClient.iceSession.update({
         where: { id: s.id },
-        data: { bookingUrl: cleanUrl },
+        data: {
+          bookingUrl: cleanUrl,
+          notes: cleanNotes,
+          requirements: mergedReqs,
+        },
       });
       updatedCount++;
     }

@@ -15,8 +15,11 @@ import {
   Calendar,
   Navigation,
   Building2,
+  AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { CATEGORY_SHORT, FACILITIES, type Category } from "@/lib/domain";
+import { extractSessionRequirements, sanitizeSessionNotes } from "@/lib/normalize";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
 import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
@@ -83,6 +86,16 @@ export function parseDivisionChips(s: SessionDTO): DivisionChip[] {
   return chips;
 }
 
+function getRequirementBadgeStyle(req: string): string {
+  if (req === "Figure Skates Only" || req === "Prior Experience Required" || req === "No Coaches Allowed") {
+    return "bg-rose-50 text-rose-800 ring-1 ring-rose-200 font-bold";
+  }
+  if (req === "Coquitlam Skate Club" || req === "Coaches Free") {
+    return "bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200 font-semibold";
+  }
+  return "bg-amber-50/90 text-amber-900 ring-1 ring-amber-200/90 font-semibold";
+}
+
 export function CapacityChip({ s }: { s: SessionDTO }) {
   const isWalkIn = s.category === "public_skate" || Boolean(s.is_walkin) || s.source === "schedule";
   if (isWalkIn) {
@@ -132,6 +145,13 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
   const needsGoalie = goalieNeeded(s);
   const isFreeGoalie = goalieFree(s);
   const divisionChips = parseDivisionChips(s);
+
+  const cleanNotes = sanitizeSessionNotes(s.notes);
+  const requirements =
+    s.requirements && s.requirements.length > 0
+      ? s.requirements
+      : extractSessionRequirements(cleanNotes, s.rawTitle);
+  const hasNotesOrReqs = Boolean(cleanNotes) || requirements.length > 0;
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -213,6 +233,15 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   {chip}
                 </span>
               ))}
+              {requirements.map((req) => (
+                <span
+                  key={req}
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${getRequirementBadgeStyle(req)}`}
+                >
+                  <AlertCircle className="size-3 shrink-0" aria-hidden />
+                  {req}
+                </span>
+              ))}
               {needsGoalie && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-amber-300/80">
                   <ShieldHalf className="size-3" aria-hidden /> Goalie Needed
@@ -234,9 +263,22 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <Clock className="size-4 shrink-0 translate-y-0.5 text-slate-400" aria-hidden />
               <p className="text-lg font-bold tabular-nums tracking-tight text-slate-900">{formatTimeRange(s.startTime, s.endTime)}</p>
             </div>
-            <p className="truncate text-sm text-slate-600" title={s.rawTitle}>
-              {s.rawTitle}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm text-slate-600" title={s.rawTitle}>
+                {s.rawTitle}
+              </p>
+              {hasNotesOrReqs && !isWalkIn && (
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80 transition hover:bg-ice-50 hover:text-ice-700 hover:ring-ice-200 cursor-pointer"
+                  aria-label={`More info and requirements for ${s.rawTitle}`}
+                >
+                  <Info className="size-3" aria-hidden />
+                  More Info
+                </button>
+              )}
+            </div>
 
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
               <span className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white">
@@ -313,7 +355,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
           onClick={() => setModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
+            className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white shadow-2xl ring-1 ring-slate-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between border-b border-slate-100 bg-teal-50/60 px-5 py-4">
@@ -322,9 +364,15 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   <span className="rounded-md bg-teal-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-teal-800">
                     {CATEGORY_SHORT[s.category]}
                   </span>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
-                    <Footprints className="size-3" aria-hidden /> Walk-in Info
-                  </span>
+                  {isWalkIn ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                      <Footprints className="size-3" aria-hidden /> Walk-in Info
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200">
+                      <Info className="size-3" aria-hidden /> Session Requirements &amp; Notes
+                    </span>
+                  )}
                 </div>
                 <h3 id={`modal-title-${s.id}`} className="text-lg font-extrabold tracking-tight text-slate-900">
                   {s.rawTitle}
@@ -373,15 +421,47 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 </div>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-950">
-                <p className="font-bold text-amber-900">Walk-In Admission Only</p>
-                <p className="mt-1 font-medium text-amber-900">
-                  Admission is managed at the arena front desk. Always verify facility status before heading over.
-                </p>
-                <p className="mt-1 text-amber-800/90">
-                  First-come, first-served at the facility front desk. The City of {s.municipality || "Vancouver"} does not take online pre-registration for general public skating sessions.
-                </p>
-              </div>
+              {requirements.length > 0 && (
+                <div className="space-y-2 rounded-xl border border-rose-200/80 bg-rose-50/50 p-3.5">
+                  <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-900">
+                    <CheckCircle2 className="size-3.5 shrink-0 text-rose-600" aria-hidden />
+                    Key Session Requirements
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {requirements.map((req) => (
+                      <span
+                        key={req}
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs ${getRequirementBadgeStyle(req)}`}
+                      >
+                        {req}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {cleanNotes && (
+                <div className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Facility Program Notes &amp; Policies
+                  </p>
+                  <div className="whitespace-pre-line text-xs leading-relaxed text-slate-700">
+                    {cleanNotes}
+                  </div>
+                </div>
+              )}
+
+              {isWalkIn && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-950">
+                  <p className="font-bold text-amber-900">Walk-In Admission Only</p>
+                  <p className="mt-1 font-medium text-amber-900">
+                    Admission is managed at the arena front desk. Always verify facility status before heading over.
+                  </p>
+                  <p className="mt-1 text-amber-800/90">
+                    First-come, first-served at the facility front desk. The City of {s.municipality || "Vancouver"} does not take online pre-registration for general public skating sessions.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2.5 rounded-xl border border-slate-200 p-3.5">
                 <div className="flex items-start gap-2">
@@ -391,16 +471,30 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                     <p className="font-semibold text-slate-800">{facilityAddress}</p>
                   </div>
                 </div>
-                <a
-                  href={googleMapsUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleOutboundClick}
-                  className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
-                >
-                  <Navigation className="size-3.5" aria-hidden />
-                  Get Directions in Google Maps
-                </a>
+                <div className="flex flex-col gap-2">
+                  {!isWalkIn && (
+                    <a
+                      href={destinationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={handleOutboundClick}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-ice-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-ice-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2"
+                    >
+                      {full ? "Join Waitlist on City Site" : cta}
+                      <ExternalLink className="size-3.5" aria-hidden />
+                    </a>
+                  )}
+                  <a
+                    href={googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleOutboundClick}
+                    className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+                  >
+                    <Navigation className="size-3.5" aria-hidden />
+                    Get Directions in Google Maps
+                  </a>
+                </div>
               </div>
             </div>
 

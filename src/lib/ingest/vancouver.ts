@@ -6,7 +6,14 @@
  */
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+  sessionKey,
+} from "../normalize";
 import {
   getVancouverDetailUrl,
   VANCOUVER_DROPIN_CALENDAR_URL,
@@ -23,6 +30,9 @@ const POLITE_FACILITY_COOLDOWN_MS = 1500;
 interface VancouverActiveNetItem {
   id: number;
   name: string;
+  desc?: string;
+  description?: string;
+  notes?: string;
   location?: { label?: string };
   category?: string;
   date_range_start: string; // YYYY-MM-DD
@@ -199,6 +209,10 @@ export async function collectVancouver(
       ? getVancouverDetailUrl(numericActivityId)
       : VANCOUVER_DROPIN_CALENDAR_URL;
 
+    const rawDesc = item.desc ?? item.description ?? item.notes ?? null;
+    const notes = sanitizeSessionNotes(rawDesc);
+    const requirements = extractSessionRequirements(rawDesc, item.name);
+
     sessions.set(key, {
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(item.name),
@@ -217,6 +231,8 @@ export async function collectVancouver(
       source: "live",
       activityId: numericActivityId,
       externalId: numericActivityId ? `activenet:${numericActivityId}` : null,
+      requirements,
+      notes,
     });
   }
 

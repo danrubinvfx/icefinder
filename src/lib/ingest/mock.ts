@@ -7,7 +7,14 @@
  */
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type Category, type FacilitySeed } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+  sessionKey,
+} from "../normalize";
 import { resolveBookingUrl } from "../links";
 import { generatePoirierTimetable } from "./poirier";
 import type { IngestWindow, NormalizedSession } from "./types";
@@ -21,6 +28,7 @@ interface Template {
   rink?: string;
   cost?: number;
   goalie?: { capacity: number };
+  notes?: string;
 }
 
 const MOCK_TEMPLATES: Record<string, Template[]> = {
@@ -245,6 +253,9 @@ function expand(
         if (tpl.goalie) goaliesRegistered = Math.floor(rnd() * (tpl.goalie.capacity + 1));
       }
 
+      const notes = sanitizeSessionNotes(tpl.notes ?? null);
+      const requirements = extractSessionRequirements(tpl.notes ?? null, tpl.title);
+
       out.push({
         facilitySlug: facility.slug,
         rawTitle: cleanTitle(tpl.title),
@@ -262,6 +273,8 @@ function expand(
         bookingUrl: bookingUrlFor(facility, category, source),
         source,
         externalId: null,
+        requirements,
+        notes,
       });
     }
   }

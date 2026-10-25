@@ -30,6 +30,8 @@ export interface SessionDTO {
   activityId?: number | null;
   externalId?: string | null;
   external_id?: string | null;
+  requirements?: string[];
+  notes?: string | null;
   updatedAt: string;
 }
 
@@ -107,6 +109,8 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
         external_id: s.externalId ?? null,
+        requirements: s.requirements ?? [],
+        notes: s.notes ?? null,
         updatedAt: new Date(now - 5 * 60_000).toISOString(),
       });
     }
@@ -199,6 +203,8 @@ export async function getFeed(): Promise<FeedPayload> {
           activityId: r.activityId ?? null,
           externalId: r.externalId,
           external_id: r.externalId,
+          requirements: r.requirements ?? [],
+          notes: r.notes ?? null,
           updatedAt: r.updatedAt.toISOString(),
         })),
         facilities: facilities.map((f) => ({

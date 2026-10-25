@@ -56,3 +56,106 @@ export function cleanTitle(rawTitle: string): string {
 export function sessionKey(facilitySlug: string, startTime: Date, category: Category | string): string {
   return `${facilitySlug}_${startTime.toISOString()}_${category}`;
 }
+
+/**
+ * Clean and sanitize raw description/notes text from municipal portals (strips HTML tags,
+ * normalizes bullets and whitespace, and removes duplicate lines).
+ */
+export function sanitizeSessionNotes(raw?: string | null): string | null {
+  if (!raw) return null;
+  const text = raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(div|p|li|ul|ol|h[1-6])>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&mdash;/gi, "—")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .replace(/\t+/g, " ");
+
+  const rawLines = text
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+
+  // Deduplicate identical bullet lines that sometimes repeat in PerfectMind descriptions
+  const seenBullets = new Set<string>();
+  const dedupedLines: string[] = [];
+  for (const line of rawLines) {
+    const key = line.toLowerCase();
+    if (line.startsWith("•") || line.startsWith("-")) {
+      if (seenBullets.has(key)) continue;
+      seenBullets.add(key);
+    }
+    dedupedLines.push(line);
+  }
+
+  const cleaned = dedupedLines.join("\n").trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/**
+ * Parse key policy constraints from raw description/notes/extraDetails into structured requirement tags.
+ */
+export function extractSessionRequirements(
+  rawText?: string | null,
+  rawTitle?: string | null,
+): string[] {
+  const combined = `${rawTitle ?? ""}\n${ sanitizeSessionNotes(rawText) ?? "" }`;
+  if (!combined.trim()) return [];
+
+  const reqs: string[] = [];
+  const add = (tag: string) => {
+    if (!reqs.includes(tag)) reqs.push(tag);
+  };
+
+  // 1. Skate type restrictions
+  if (
+    /only figure skates can be worn|must wear figure skates|ice dancers and figure skaters only|recreational skates are not appropriate/i.test(
+      combined,
+    )
+  ) {
+    add("Figure Skates Only");
+  }
+
+  // 2. Experience requirements
+  if (
+    /previous figure skating experience|prior.*experience|confidently skate at star\s*\d|level star\s*\d/i.test(
+      combined,
+    )
+  ) {
+    add("Prior Experience Required");
+  }
+
+  // 3. Club partnerships & coaching rules
+  if (/coquitlam skate club/i.test(combined)) {
+    add("Coquitlam Skate Club");
+  }
+  if (/no coaches allowed|coaching is not permitted/i.test(combined)) {
+    add("No Coaches Allowed");
+  } else if (/coaches are free of charge/i.test(combined)) {
+    add("Coaches Free");
+  } else if (/coaches are required to pay/i.test(combined)) {
+    add("Coaches Must Pay");
+  }
+
+  // 4. Equipment & safety rules
+  if (/full hockey equipment is required|full hockey equipment.*mandatory|full equipment is mandatory/i.test(combined)) {
+    add("Full Gear Required");
+  } else if (/csa approved.*helmet.*mandatory|helmets? are mandatory/i.test(combined)) {
+    add("CSA Helmet Required");
+  }
+
+  if (/no goalies allowed/i.test(combined)) {
+    add("No Goalies Allowed");
+  }
+
+  return reqs;
+}

@@ -6,7 +6,14 @@
  */
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+  sessionKey,
+} from "../normalize";
 import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
@@ -28,6 +35,13 @@ interface PerfectMindClass {
   PriceRange?: string; // e.g. "$0.00 - $7.90"
   Facility?: string; // e.g. "Registered Visits - Coliseum"
   Location?: string; // e.g. "Richmond Ice Centre"
+  Details?: string;
+  Description?: string;
+  Notes?: string;
+  ExtraDetails?: string;
+  description?: string;
+  notes?: string;
+  extraDetails?: string;
 }
 
 interface PerfectMindClassesResponse {
@@ -151,11 +165,23 @@ export async function collectPerfectMind(
       await sleep(POLITE_FACILITY_COOLDOWN_MS);
       classes = await getPerfectMindClassesCached(url, calendarId, log, `Richmond ${facility.shortName}`);
     } else if (facility.municipality === "Coquitlam") {
-      const calendarId = "4f07c977-74de-46ab-9d0a-2397f83f254f";
       const url =
         "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
       await sleep(POLITE_FACILITY_COOLDOWN_MS);
-      classes = await getPerfectMindClassesCached(url, calendarId, log, "Coquitlam Poirier");
+      const dropInClasses = await getPerfectMindClassesCached(
+        url,
+        "4f07c977-74de-46ab-9d0a-2397f83f254f",
+        log,
+        "Coquitlam Poirier Drop-In",
+      );
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      const skateClasses = await getPerfectMindClassesCached(
+        url,
+        "b7685f76-3d81-4fac-b270-60659b414ff6",
+        log,
+        "Coquitlam Poirier Public Skate & Buy-On",
+      );
+      classes = [...dropInClasses, ...skateClasses];
     } else if (facility.municipality === "Delta") {
       const calendarId = "c9b7ca71-56dc-43e3-aec7-d976239a5660";
       const url =
@@ -228,6 +254,10 @@ export async function collectPerfectMind(
           });
 
     const rink = c.Facility?.replace(/^registered visits\s*-\s*/i, "").trim() || null;
+    const rawDesc =
+      c.Details ?? c.Description ?? c.Notes ?? c.ExtraDetails ?? c.description ?? c.notes ?? c.extraDetails ?? null;
+    const notes = sanitizeSessionNotes(rawDesc);
+    const requirements = extractSessionRequirements(rawDesc, c.EventName);
 
     sessions.set(key, {
       facilitySlug: facility.slug,
@@ -247,6 +277,8 @@ export async function collectPerfectMind(
       source: "live",
       activityId: c.CourseIdTrimmed ? Number(c.CourseIdTrimmed) : null,
       externalId: c.EventId ? `perfectmind:${c.EventId}` : null,
+      requirements,
+      notes,
     });
   }
 

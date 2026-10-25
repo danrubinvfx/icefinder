@@ -9,7 +9,13 @@
 import { fromZonedTime } from "date-fns-tz";
 import type { PrismaClient } from "@prisma/client";
 import { TIMEZONE, type Category } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+} from "../normalize";
 import { fetchJson } from "./http";
 import type { NormalizedSession } from "./types";
 
@@ -23,6 +29,7 @@ const POIRIER_API_URL =
   "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
 
 const POIRIER_CALENDAR_ID = "4f07c977-74de-46ab-9d0a-2397f83f254f";
+const POIRIER_PUBLIC_SKATE_CALENDAR_ID = "b7685f76-3d81-4fac-b270-60659b414ff6";
 
 export interface PoirierSessionOptions {
   requiresPreReg?: boolean;
@@ -51,6 +58,13 @@ interface PerfectMindClass {
   PriceRange?: string;
   Facility?: string;
   Location?: string;
+  Details?: string;
+  Description?: string;
+  Notes?: string;
+  ExtraDetails?: string;
+  description?: string;
+  notes?: string;
+  extraDetails?: string;
 }
 
 interface PerfectMindClassesResponse {
@@ -101,16 +115,26 @@ function parsePrice(range?: string): number | null {
  */
 async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<NormalizedSession[]> {
   try {
-    const data = await fetchJson<PerfectMindClassesResponse>(POIRIER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ calendarId: POIRIER_CALENDAR_ID }),
-      timeoutMs: 8_000,
-    });
+    const [dropInRes, skateRes] = await Promise.all([
+      fetchJson<PerfectMindClassesResponse>(POIRIER_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ calendarId: POIRIER_CALENDAR_ID }),
+        timeoutMs: 8_000,
+      }).catch(() => ({ classes: [] })),
+      fetchJson<PerfectMindClassesResponse>(POIRIER_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ calendarId: POIRIER_PUBLIC_SKATE_CALENDAR_ID }),
+        timeoutMs: 8_000,
+      }).catch(() => ({ classes: [] })),
+    ]);
 
-    const classes = data.classes ?? [];
+    const classes = [...(dropInRes.classes ?? []), ...(skateRes.classes ?? [])];
     if (!classes.length) return [];
 
     const sessions = new Map<string, NormalizedSession>();
@@ -157,6 +181,10 @@ async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<
       const activityId = c.CourseIdTrimmed ? Number(c.CourseIdTrimmed) : null;
       const externalId = c.EventId ? `perfectmind:${c.EventId}` : null;
       const rink = c.Facility?.replace(/^registered visits\s*-\s*/i, "").trim() || "Main Arena";
+      const rawDesc =
+        c.Details ?? c.Description ?? c.Notes ?? c.ExtraDetails ?? c.description ?? c.notes ?? c.extraDetails ?? null;
+      const notes = sanitizeSessionNotes(rawDesc);
+      const requirements = extractSessionRequirements(rawDesc, c.EventName);
 
       sessions.set(key, {
         facilitySlug: "poirier",
@@ -177,6 +205,8 @@ async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<
         source: "live",
         activityId,
         externalId,
+        requirements,
+        notes,
       });
     }
 
@@ -198,6 +228,23 @@ async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<
 /**
  * Tier 2: Structured timetable rule engine.
  */
+function defaultPoirierDescription(rawTitle: string, category: Category): string {
+  const t = rawTitle.toLowerCase();
+  if (category === "figure_buyon") {
+    if (t.includes("adult")) {
+      return "This drop in is for ice dancers and figure skaters only! Dance music is played during these sessions. No coaches allowed. Figure skaters may practice jumps and spins on the ice but no full ice routines. Skaters must be aware of their surroundings and be respectful of other skaters.";
+    }
+    return "Drop-in Figure Skating. This program is run in partnership with the Coquitlam Skate Club. Participants are to bring receipt of payment to Coquitlam Skate Club coaches. Coaches are free of charge.\n• Only figure skates can be worn during sessions.\n• Helmets are optional but strongly recommended.\n• The use of the structural harness can only be done so by Coquitlam Skate Club coaches.\n• Participants must have previous figure skating experience.";
+  }
+  if (category === "hockey_dropin") {
+    return "Adults of all skill level are welcome for adult drop-in hockey. Come out and enjoy a fun and welcoming non-competitive environment.\n• CSA approved helmets are mandatory; full face cage/visor highly recommended.\n• Full hockey equipment is required.\n• Players are to bring both dark & light jerseys.";
+  }
+  if (category === "stick_and_puck") {
+    return "Participants must have own hockey gloves, stick and puck.\n• All participants must have a CSA approved helmet, hockey gloves, stick & puck. A full cage is required for all participants 18 years and under. A cage or visor is highly recommended for anyone 19+.\n• No goalies allowed, no slap shots & no scrimmages.";
+  }
+  return "Helmets are mandatory for children under 12 and any skater using a skating aid.\n• Children under 7 must be accompanied on the ice by a paying, registered adult (16+).\n• Wheelchairs and strollers are permitted on the ice if the occupant wears a helmet.";
+}
+
 export function generatePoirierTimetable(startDate: Date, endDate: Date): NormalizedSession[] {
   const sessions: NormalizedSession[] = [];
 
@@ -220,6 +267,7 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
     isGoalieFree?: boolean;
     goalieSpots?: number;
     goaliesRegistered?: number;
+    notes?: string;
   }) {
     const startTime = fromZonedTime(`${opts.ymd}T${opts.start}:00`, TIMEZONE);
     const endTime = fromZonedTime(`${opts.ymd}T${opts.end}:00`, TIMEZONE);
@@ -227,6 +275,9 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
 
     const total = opts.totalSpots ?? 25;
     const open = opts.openSpots ?? total;
+    const rawDesc = opts.notes ?? defaultPoirierDescription(opts.rawTitle, opts.category);
+    const notes = sanitizeSessionNotes(rawDesc);
+    const requirements = extractSessionRequirements(rawDesc, opts.rawTitle);
 
     sessions.push({
       facilitySlug: "poirier",
@@ -246,6 +297,8 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
         opts.category === "public_skate" ? POIRIER_PUBLIC_SKATE_BOOKING_URL : POIRIER_BOOKING_URL,
       source: "schedule",
       externalId: null,
+      requirements,
+      notes,
     });
   }
 
@@ -691,6 +744,8 @@ export async function upsertPoirierSessions(
         activityId: s.activityId,
         source: s.source,
         externalId: s.externalId,
+        requirements: s.requirements ?? [],
+        notes: s.notes ?? null,
       },
       create: {
         id,
@@ -711,6 +766,8 @@ export async function upsertPoirierSessions(
         activityId: s.activityId,
         source: s.source,
         externalId: s.externalId,
+        requirements: s.requirements ?? [],
+        notes: s.notes ?? null,
       },
     });
     upserted++;

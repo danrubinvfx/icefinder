@@ -6,7 +6,14 @@
  * live roster counts via the `summary` include and the rink via the `resource` include.
  */
 import type { FacilitySeed } from "../domain";
-import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
+import {
+  cleanTitle,
+  extractSessionRequirements,
+  isGoalieListing,
+  normalizeCategory,
+  sanitizeSessionNotes,
+  sessionKey,
+} from "../normalize";
 import { CANLAN_PROGRAMS_FALLBACK } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -130,6 +137,10 @@ export async function collectCanlan(
       if (rink && existing.rink && !existing.rink.includes(rink)) existing.rink += ` + ${rink.replace(/^Rink\s*/i, "")}`;
       continue;
     }
+    const rawDesc = [a.description, a.notice].filter(Boolean).join("\n");
+    const notes = sanitizeSessionNotes(rawDesc || null);
+    const requirements = extractSessionRequirements(rawDesc || null, a.desc);
+
     sessions.set(key, {
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(a.desc),
@@ -148,6 +159,8 @@ export async function collectCanlan(
       source: "live",
       activityId: Number(ev.id) || null,
       externalId: `daysmart:${ev.id}`,
+      requirements,
+      notes,
     });
   }
 

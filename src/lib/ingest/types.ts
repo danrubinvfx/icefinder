@@ -19,6 +19,8 @@ export interface NormalizedSession {
   source: "live" | "mock" | "schedule";
   activityId?: number | null;
   externalId: string | null;
+  requirements?: string[];
+  notes?: string | null;
 }
 
 export interface IngestWindow {
