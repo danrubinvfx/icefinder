@@ -4,7 +4,7 @@
  * Vancouver operates 6 major rinks on ActiveNet: Britannia, Hillcrest, Kitsilano,
  * Trout Lake, Sunset, and Killarney.
  */
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import {
   cleanTitle,
@@ -257,7 +257,7 @@ export async function collectVancouver(
 
     for (let t = window.from.getTime() - 86_400_000; t < window.to.getTime() + 86_400_000; t += 86_400_000) {
       const ymd = toYmd(new Date(t));
-      const dow = new Date(`${ymd}T12:00:00Z`).getUTCDay();
+      const dow = toZonedTime(fromZonedTime(`${ymd}T12:00:00`, TIMEZONE), TIMEZONE).getDay();
       if (dow !== 0 || livePublicSkateDates.has(ymd)) continue;
       const startTime = localToUtc(ymd, [14, 15]);
       const endTime = localToUtc(ymd, [15, 45]);

@@ -6,7 +6,7 @@
  *   2. Fallback Engine: Structured timetable rule engine adhering strictly to Coquitlam recreation guidelines,
  *      including footer buy-ons, mid-season cutoffs, blackout/cancellations, and statutory holiday schedules.
  */
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import type { PrismaClient } from "@prisma/client";
 import { TIMEZONE, type Category } from "../domain";
 import {
@@ -303,8 +303,8 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
   }
 
   for (const ymd of days) {
-    const noonUtc = new Date(`${ymd}T12:00:00Z`);
-    const dow = noonUtc.getUTCDay();
+    const localNoon = fromZonedTime(`${ymd}T12:00:00`, TIMEZONE);
+    const dow = toZonedTime(localNoon, TIMEZONE).getDay();
 
     // ── C. Statutory Holiday & Special Event Overrides ─────────────────────
     // 2026-09-07 (Labour Day) & 2026-10-12 (Thanksgiving):

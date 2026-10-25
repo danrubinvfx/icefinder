@@ -5,7 +5,7 @@
  *
  * Also provides published *public skate* timetables across Metro Vancouver facilities.
  */
-import { fromZonedTime } from "date-fns-tz";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import {
   cleanTitle,
@@ -127,7 +127,7 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
     { title: "Family Skate", days: [6, 0], start: "14:00", minutes: 120, capacity: 250, rink: "Rink 1", cost: 6.4 },
   ],
   "bill-copeland": [
-    { title: "Leisure Skate", days: [0, 3], start: "12:00", minutes: 90, capacity: 220, cost: 6.4 },
+    { title: "Leisure Skate", days: [1, 3], start: "12:00", minutes: 90, capacity: 220, cost: 6.4 },
     { title: "Everyone Welcome Skate", days: [6], start: "19:30", minutes: 120, capacity: 250, cost: 6.4 },
   ],
 
@@ -232,7 +232,7 @@ function expand(
   const out: NormalizedSession[] = [];
   const bucket = Math.floor(Date.now() / 600_000);
   for (const ymd of eachLocalDay(window)) {
-    const dow = new Date(`${ymd}T12:00:00Z`).getUTCDay();
+    const dow = toZonedTime(fromZonedTime(`${ymd}T12:00:00`, TIMEZONE), TIMEZONE).getDay();
     for (const tpl of templates) {
       if (!tpl.days.includes(dow)) continue;
       const category = normalizeCategory(tpl.title);

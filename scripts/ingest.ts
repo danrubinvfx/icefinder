@@ -10,7 +10,8 @@
  *   npx tsx scripts/ingest.ts --watch 15      # long-running: re-sync every 15 minutes
  */
 import { PrismaClient } from "@prisma/client";
-import { FACILITIES, type Category } from "../src/lib/domain";
+import { toZonedTime } from "date-fns-tz";
+import { FACILITIES, TIMEZONE, type Category } from "../src/lib/domain";
 import { runIngestion, POLITE_FACILITY_COOLDOWN_MS, type IngestOptions } from "../src/lib/ingest/engine";
 import {
   resolveBookingUrl,
@@ -74,6 +75,16 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
 
   let updatedCount = 0;
   for (const s of sessions) {
+    // Ensure Bill Copeland has 0 phantom walk-in / public_skate sessions on Sunday (dayOfWeek === 0 in America/Vancouver)
+    if (
+      s.facility.slug === "bill-copeland" &&
+      s.category === "public_skate" &&
+      toZonedTime(s.startTime, TIMEZONE).getDay() === 0
+    ) {
+      await prismaClient.iceSession.delete({ where: { id: s.id } });
+      continue;
+    }
+
     const cleanUrl =
       s.facility.municipality === "Coquitlam" || s.facility.slug === "poirier"
         ? (s.category === "public_skate"

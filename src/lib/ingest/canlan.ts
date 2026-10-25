@@ -5,7 +5,7 @@
  * exposes published drop-in events (Shinny, Stick & Puck, figure Open Sessions) with
  * live roster counts via the `summary` include and the rink via the `resource` include.
  */
-import type { FacilitySeed } from "../domain";
+import { TIMEZONE, type FacilitySeed } from "../domain";
 import {
   cleanTitle,
   extractSessionRequirements,
@@ -59,7 +59,7 @@ interface DashResponse {
   included?: (DashSummary | DashResource)[];
 }
 
-const ymd = (d: Date) => d.toISOString().slice(0, 10);
+const ymd = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: TIMEZONE });
 
 export function canlanBookingUrl(eventId?: string | null) {
   if (!eventId) return CANLAN_PROGRAMS_FALLBACK;

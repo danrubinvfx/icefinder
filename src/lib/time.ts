@@ -1,3 +1,4 @@
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
 import { TIMEZONE } from "./domain";
 
 /** All date math is done in America/Vancouver so server and client render identically. */
@@ -28,7 +29,7 @@ export function addDaysYmd(ymd: string, n: number) {
 }
 
 export function dowOfYmd(ymd: string) {
-  return new Date(`${ymd}T12:00:00Z`).getUTCDay();
+  return toZonedTime(fromZonedTime(`${ymd}T12:00:00`, TIMEZONE), TIMEZONE).getDay();
 }
 
 export function shortDow(d: Date | string) {
