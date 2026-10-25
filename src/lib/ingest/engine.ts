@@ -60,17 +60,39 @@ function collectorFor(f: FacilitySeed) {
   return collectActiveNet;
 }
 
-/** Merge lists; earlier lists win on key collisions (live > schedule). */
+/**
+ * Merge lists; earlier lists win on key collisions (live > schedule).
+ * Also ensures live sessions override schedule templates on the same local date & category
+ * so true start/end times parsed from live feeds replace static template times.
+ */
 function mergeByKey(...lists: NormalizedSession[][]): NormalizedSession[] {
   const map = new Map<string, NormalizedSession>();
-  for (const list of lists)
+  const liveDayCategory = new Set<string>();
+
+  for (const list of lists) {
     for (const s of list) {
+      if (s.source === "live") {
+        const ymd = s.startTime.toLocaleDateString("en-CA", { timeZone: "America/Vancouver" });
+        liveDayCategory.add(`${s.facilitySlug}|${ymd}|${s.category}`);
+      }
+    }
+  }
+
+  for (const list of lists) {
+    for (const s of list) {
+      if (s.source === "schedule") {
+        const ymd = s.startTime.toLocaleDateString("en-CA", { timeZone: "America/Vancouver" });
+        if (liveDayCategory.has(`${s.facilitySlug}|${ymd}|${s.category}`)) {
+          continue;
+        }
+      }
       const k =
         s.facilitySlug === "poirier"
           ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
           : sessionKey(s.facilitySlug, s.startTime, s.category);
       if (!map.has(k)) map.set(k, s);
     }
+  }
   return [...map.values()];
 }
 
@@ -195,7 +217,7 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
       const pruned = await prisma.iceSession.deleteMany({
         where: {
           facilityId: dbFacility.id,
-          startTime: { gte: startedAt, lt: window.to },
+          startTime: { gte: window.from, lt: window.to },
           id: { notIn: seen },
         },
       });

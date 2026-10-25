@@ -116,10 +116,20 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     `${s.facilityName}, ${facilityAddress}`,
   )}`;
 
-  const priceDisplay =
-    s.cost !== null && s.cost !== 6.4
+  const isBurnaby =
+    s.municipality === "Burnaby" ||
+    ["rosemary-brown", "kensington", "bill-copeland"].includes(s.facilitySlug);
+
+  const priceDisplay = isBurnaby
+    ? s.cost !== null && s.cost !== 6.4
       ? `$${s.cost.toFixed(2)} (Standard: $6.40 / Be Active Pass)`
-      : "$6.40 / Be Active Pass";
+      : "$6.40 / Be Active Pass"
+    : s.municipality === "Vancouver" ||
+      ["britannia", "hillcrest", "kitsilano", "trout-lake", "sunset", "killarney"].includes(s.facilitySlug)
+    ? `$${(s.cost ?? 7.2).toFixed(2)}`
+    : s.cost !== null
+    ? `$${s.cost.toFixed(2)}`
+    : "Drop-in Admission";
 
   return (
     <>
@@ -292,7 +302,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-950">
                 <p className="font-bold text-amber-900">Walk-In Admission Only</p>
                 <p className="mt-1">
-                  First-come, first-served at the facility front desk. The City of Burnaby does not take online pre-registration for general public skating sessions.
+                  First-come, first-served at the facility front desk. The City of {s.municipality || "Vancouver"} does not take online pre-registration for general public skating sessions.
                 </p>
               </div>
 

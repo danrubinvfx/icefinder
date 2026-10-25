@@ -145,7 +145,8 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
     { title: "Youth Skate", days: [5], start: "17:30", minutes: 90, capacity: 200, cost: 4.5 },
   ],
   killarney: [
-    { title: "Public Skate", days: [6, 0], start: "13:00", minutes: 90, capacity: 200, cost: 7.2 },
+    { title: "Public Skate", days: [0], start: "14:15", minutes: 90, capacity: 200, cost: 7.2 },
+    { title: "Public Skate", days: [6], start: "13:00", minutes: 90, capacity: 200, cost: 7.2 },
     { title: "Toonie Skate", days: [4], start: "18:00", minutes: 90, capacity: 200, cost: 2 },
   ],
 

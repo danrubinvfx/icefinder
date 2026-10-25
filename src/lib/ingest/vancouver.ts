@@ -229,5 +229,47 @@ export async function collectVancouver(
     parent.isGoalieFree = goalieCost === null || goalieCost === 0 || (parent.cost !== null && goalieCost < parent.cost);
   }
 
+  // Ensure Killarney Sunday Public Skate defaults to 2:15 PM – 3:45 PM (14:15 – 15:45)
+  // while allowing any live Park Board calendar/activity payload entry for that date to override with its true parsed start/end times.
+  if (facility.slug === "killarney") {
+    const livePublicSkateDates = new Set<string>();
+    for (const s of sessions.values()) {
+      if (s.category === "public_skate") {
+        livePublicSkateDates.add(toYmd(s.startTime));
+      }
+    }
+
+    for (let t = window.from.getTime() - 86_400_000; t < window.to.getTime() + 86_400_000; t += 86_400_000) {
+      const ymd = toYmd(new Date(t));
+      const dow = new Date(`${ymd}T12:00:00Z`).getUTCDay();
+      if (dow !== 0 || livePublicSkateDates.has(ymd)) continue;
+      const startTime = localToUtc(ymd, [14, 15]);
+      const endTime = localToUtc(ymd, [15, 45]);
+      if (startTime < window.from || startTime >= window.to) continue;
+      const key = sessionKey(facility.slug, startTime, "public_skate");
+      if (!sessions.has(key)) {
+        sessions.set(key, {
+          facilitySlug: facility.slug,
+          rawTitle: "Public Skate",
+          category: "public_skate",
+          rink: null,
+          startTime,
+          endTime,
+          totalSpots: 200,
+          openSpots: 200,
+          waitlistCount: 0,
+          isGoalieFree: false,
+          goalieSpots: null,
+          goaliesRegistered: null,
+          cost: 7.2,
+          bookingUrl: VANCOUVER_DROPIN_CALENDAR_URL,
+          source: "schedule",
+          activityId: null,
+          externalId: null,
+        });
+      }
+    }
+  }
+
   return [...sessions.values()];
 }
