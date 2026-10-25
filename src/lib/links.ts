@@ -24,11 +24,17 @@ export const BURNABY_FACILITY_URLS: Record<string, string> = {
     "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
 };
 
-// Aliased for backwards compatibility
-export const BURNABY_FACILITY_SCHEDULE_URLS = BURNABY_FACILITY_URLS;
+export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
+  "rosemary-brown":
+    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/rosemary-brown-recreation-centre",
+  kensington:
+    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/kensington-complex",
+  "bill-copeland":
+    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre",
+};
 
 export const BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK =
-  "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+  "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
 
 export const BURNABY_FIGURE_SKATING_RESERVE_URL =
   "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=figure%20skating%20reserve&viewMode=list";
@@ -45,19 +51,23 @@ export function getBurnabyCategoryUrl(category: Category | string, facilitySlug?
   const centerId = getBurnabyCenterId(facilitySlug);
   const centerParam = centerId ? `&center_ids=${centerId}` : "";
 
+  if (category === "public_skate") {
+    return getBurnabyPublicSkateUrl(facilitySlug);
+  }
   if (category === "figure_buyon") {
     return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=figure%20skating%20reserve${centerParam}&viewMode=list`;
   }
   if (category === "hockey_dropin" || category === "stick_and_puck") {
     return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve${centerParam}&viewMode=list`;
   }
-  return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate${centerParam}&viewMode=list`;
+  return getBurnabyPublicSkateUrl(facilitySlug);
 }
 
 export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
-  const centerId = getBurnabyCenterId(facilitySlug);
-  const centerParam = centerId ? `&center_ids=${centerId}` : "";
-  return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate${centerParam}&viewMode=list`;
+  if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
+    return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
+  }
+  return "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
 }
 
 export function getBurnabyDetailUrl(activityId: number | string): string {
@@ -72,11 +82,10 @@ export function getBurnabyFallbackUrl(
   if (category) {
     return getBurnabyCategoryUrl(category, facilitySlug);
   }
-  const centerId = getBurnabyCenterId(facilitySlug);
-  if (centerId) {
-    return `https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_keyword=skate&center_ids=${centerId}&viewMode=list`;
+  if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
+    return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
   }
-  return BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK;
+  return "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
 }
 
 export function getBurnabyUrl(opts: {
@@ -85,6 +94,9 @@ export function getBurnabyUrl(opts: {
   externalId?: string | null;
   facilitySlug?: string | null;
 }): string {
+  if (opts.category === "public_skate") {
+    return getBurnabyPublicSkateUrl(opts.facilitySlug);
+  }
   const rawId = opts.activityId ?? (opts.externalId ? opts.externalId.replace(/\D/g, "") : null);
   if (rawId) {
     return getBurnabyDetailUrl(rawId);
@@ -300,6 +312,9 @@ export function resolveBookingUrl(opts: {
   }
 
   // 6. Burnaby (ActiveNet)
+  if (category === "public_skate") {
+    return getBurnabyPublicSkateUrl(facilitySlug);
+  }
   const burnabyId = activityId ?? (externalId ? externalId.replace(/\D/g, "") : null);
   if (burnabyId) {
     return getBurnabyDetailUrl(burnabyId);

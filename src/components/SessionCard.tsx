@@ -18,7 +18,11 @@ export function goalieNeeded(s: SessionDTO) {
 }
 
 export function CapacityChip({ s }: { s: SessionDTO }) {
-  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin);
+  const isBurnabyPublicSkate =
+    (s.municipality === "Burnaby" ||
+      ["rosemary-brown", "kensington", "bill-copeland"].includes(s.facilitySlug)) &&
+    s.category === "public_skate";
+  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin) || isBurnabyPublicSkate;
   if (isWalkIn) {
     return (
       <span
@@ -55,14 +59,19 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
 
 export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: string }) {
   const style = CATEGORY_STYLE[s.category];
-  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin);
-  const full = s.source !== "schedule" && s.openSpots <= 0;
-  const needsGoalie = goalieNeeded(s);
+  const isBurnabyPublicSkate =
+    (s.municipality === "Burnaby" ||
+      ["rosemary-brown", "kensington", "bill-copeland"].includes(s.facilitySlug)) &&
+    s.category === "public_skate";
+  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin) || isBurnabyPublicSkate;
   const isReservable =
-    s.category === "hockey_dropin" ||
-    s.category === "stick_and_puck" ||
-    s.category === "figure_buyon" ||
-    (s.category === "public_skate" && s.source === "live");
+    !isBurnabyPublicSkate &&
+    (s.category === "hockey_dropin" ||
+      s.category === "stick_and_puck" ||
+      s.category === "figure_buyon" ||
+      (s.category === "public_skate" && s.source === "live"));
+  const full = isReservable && s.source !== "schedule" && s.openSpots <= 0;
+  const needsGoalie = goalieNeeded(s);
 
   const cta =
     s.bookingPlatform === "canlan"
