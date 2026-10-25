@@ -3,7 +3,7 @@
 import { ExternalLink, Clock, MapPin, ShieldHalf, DollarSign, Users, Footprints } from "lucide-react";
 import { CATEGORY_SHORT, type Category } from "@/lib/domain";
 import { formatTimeRange } from "@/lib/time";
-import { resolveBookingUrl, COQUITLAM_SCHEDULE_URL } from "@/lib/links";
+import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
 
 const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }> = {
@@ -18,12 +18,7 @@ export function goalieNeeded(s: SessionDTO) {
 }
 
 export function CapacityChip({ s }: { s: SessionDTO }) {
-  const isCoquitlam = s.municipality === "Coquitlam" || s.facilitySlug === "poirier";
-  const isCoquitlamWalkInOrPublic =
-    isCoquitlam &&
-    (s.category === "public_skate" || /walk-?in/i.test(s.rawTitle));
-
-  if (s.source === "schedule" || isCoquitlamWalkInOrPublic) {
+  if (s.source === "schedule") {
     return (
       <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
         <Footprints className="size-3.5" aria-hidden /> Walk-in · pay at door
@@ -56,28 +51,13 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
 
 export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: string }) {
   const style = CATEGORY_STYLE[s.category];
-  const isCoquitlam = s.municipality === "Coquitlam" || s.facilitySlug === "poirier";
-  const isCoquitlamWalkInOrPublic =
-    isCoquitlam &&
-    (s.category === "public_skate" ||
-      (s.source === "schedule" &&
-        s.category !== "hockey_dropin" &&
-        s.category !== "stick_and_puck" &&
-        s.category !== "figure_buyon") ||
-      /walk-?in/i.test(s.rawTitle));
-
-  const isReservable = isCoquitlam
-    ? !isCoquitlamWalkInOrPublic &&
-      (s.category === "hockey_dropin" ||
-        s.category === "stick_and_puck" ||
-        s.category === "figure_buyon")
-    : s.category === "hockey_dropin" ||
-      s.category === "stick_and_puck" ||
-      s.category === "figure_buyon" ||
-      (s.category === "public_skate" && s.source === "live");
-
-  const full = isReservable && s.source !== "schedule" && s.openSpots <= 0;
+  const full = s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
+  const isReservable =
+    s.category === "hockey_dropin" ||
+    s.category === "stick_and_puck" ||
+    s.category === "figure_buyon" ||
+    (s.category === "public_skate" && s.source === "live");
 
   const cta =
     s.bookingPlatform === "canlan"
@@ -86,19 +66,17 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
       ? "Book on City Site"
       : "View Arena Schedule";
 
-  const destinationUrl = isCoquitlamWalkInOrPublic
-    ? COQUITLAM_SCHEDULE_URL
-    : resolveBookingUrl({
-        bookingUrl: s.bookingUrl,
-        category: s.category,
-        bookingPlatform: s.bookingPlatform,
-        activityId: s.activityId,
-        externalId: s.externalId,
-        facilitySlug: s.facilitySlug,
-        municipality: s.municipality,
-        source: s.source,
-        rawTitle: s.rawTitle,
-      });
+  const destinationUrl = resolveBookingUrl({
+    bookingUrl: s.bookingUrl,
+    category: s.category,
+    bookingPlatform: s.bookingPlatform,
+    activityId: s.activityId,
+    externalId: s.externalId,
+    facilitySlug: s.facilitySlug,
+    municipality: s.municipality,
+    source: s.source,
+    rawTitle: s.rawTitle,
+  });
 
   return (
     <article

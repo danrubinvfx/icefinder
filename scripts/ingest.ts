@@ -11,7 +11,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
-import { resolveBookingUrl } from "../src/lib/links";
+import { resolveBookingUrl, COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL } from "../src/lib/links";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
 
 function arg(name: string): string | undefined {
@@ -38,16 +38,19 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
 
   let updatedCount = 0;
   for (const s of sessions) {
-    const cleanUrl = resolveBookingUrl({
-      bookingUrl: s.bookingUrl,
-      category: s.category as any,
-      bookingPlatform: s.facility.bookingPlatform,
-      activityId: s.activityId,
-      externalId: s.externalId,
-      facilitySlug: s.facility.slug,
-      municipality: s.facility.municipality,
-      source: s.source,
-    });
+    const cleanUrl =
+      s.facility.municipality === "Coquitlam" || s.facility.slug === "poirier"
+        ? COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL
+        : resolveBookingUrl({
+            bookingUrl: s.bookingUrl,
+            category: s.category as any,
+            bookingPlatform: s.facility.bookingPlatform,
+            activityId: s.activityId,
+            externalId: s.externalId,
+            facilitySlug: s.facility.slug,
+            municipality: s.facility.municipality,
+            source: s.source,
+          });
 
     if (s.bookingUrl !== cleanUrl) {
       await prismaClient.iceSession.update({

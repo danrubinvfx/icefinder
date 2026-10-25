@@ -7,7 +7,7 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { resolveBookingUrl } from "../links";
+import { resolveBookingUrl, COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -198,15 +198,18 @@ export async function collectPerfectMind(
     const cost = parsePrice(c.PriceRange);
     const activityId = c.CourseIdTrimmed ? Number(c.CourseIdTrimmed) : null;
     const externalId = c.EventId ? `perfectmind:${c.EventId}` : null;
-    const bookingUrl = resolveBookingUrl({
-      category,
-      bookingPlatform: facility.bookingPlatform,
-      facilitySlug: facility.slug,
-      municipality: facility.municipality,
-      activityId,
-      externalId,
-      source: "live",
-    });
+    const bookingUrl =
+      facility.municipality === "Coquitlam" || facility.slug === "poirier"
+        ? COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL
+        : resolveBookingUrl({
+            category,
+            bookingPlatform: facility.bookingPlatform,
+            facilitySlug: facility.slug,
+            municipality: facility.municipality,
+            activityId,
+            externalId,
+            source: "live",
+          });
 
     const rink = c.Facility?.replace(/^registered visits\s*-\s*/i, "").trim() || null;
 
