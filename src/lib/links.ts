@@ -129,18 +129,56 @@ export const COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL =
 export const COQUITLAM_PERFECTMIND_SKATING_URL =
   COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
 
+export const COQUITLAM_SCHEDULE_URL =
+  "https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex";
+
+export const COQUITLAM_POIRIER_SCHEDULE_URL = COQUITLAM_SCHEDULE_URL;
+
 export const COQUITLAM_FACILITY_SCHEDULE_URLS: Record<string, string> = {
-  poirier: COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL,
+  poirier: COQUITLAM_SCHEDULE_URL,
 };
 
 export function getCoquitlamUrl(
-  category?: Category | string,
+  categoryOrOpts?:
+    | Category
+    | string
+    | {
+        category?: Category | string;
+        facilitySlug?: string | null;
+        source?: string | null;
+        rawTitle?: string | null;
+      },
   facilitySlug?: string | null,
   source?: string | null,
+  rawTitle?: string | null,
 ): string {
-  void category;
-  void facilitySlug;
-  void source;
+  let cat: Category | string | undefined;
+  let src: string | null | undefined = source;
+  let title: string | null | undefined = rawTitle;
+
+  if (categoryOrOpts && typeof categoryOrOpts === "object") {
+    cat = categoryOrOpts.category;
+    src = categoryOrOpts.source ?? src;
+    title = categoryOrOpts.rawTitle ?? title;
+  } else {
+    cat = categoryOrOpts;
+  }
+
+  const isExplicitWalkIn = title ? /walk-?in/i.test(title) : false;
+
+  const isReservableCategory =
+    cat === "hockey_dropin" ||
+    cat === "stick_and_puck" ||
+    cat === "figure_buyon";
+
+  if (isReservableCategory && !isExplicitWalkIn) {
+    return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+  }
+
+  if (cat === "public_skate" || src === "schedule" || isExplicitWalkIn) {
+    return COQUITLAM_SCHEDULE_URL;
+  }
+
   return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
 }
 
@@ -148,9 +186,7 @@ export function getCoquitlamFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  void category;
-  void facilitySlug;
-  return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+  return getCoquitlamUrl(category, facilitySlug);
 }
 
 // ── Richmond (PerfectMind) ──────────────────────────────────────────────
@@ -236,8 +272,9 @@ export function resolveBookingUrl(opts: {
   facilitySlug?: string | null;
   municipality?: string | null;
   source?: string | null;
+  rawTitle?: string | null;
 }): string {
-  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug, municipality } = opts;
+  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug, municipality, source, rawTitle } = opts;
 
   // 1. Scotia Barn / Canlan (DaySmart)
   if (bookingPlatform === "canlan" || facilitySlug === "scotia-barn" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
@@ -265,7 +302,12 @@ export function resolveBookingUrl(opts: {
 
   // 4. Coquitlam / Poirier (PerfectMind)
   if (municipality === "Coquitlam" || facilitySlug === "poirier") {
-    return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+    return getCoquitlamUrl({
+      category,
+      facilitySlug,
+      source,
+      rawTitle,
+    });
   }
 
   // 5. Delta (PerfectMind)

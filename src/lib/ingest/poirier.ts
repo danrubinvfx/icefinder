@@ -169,7 +169,10 @@ async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<
         goalieSpots: null,
         goaliesRegistered: null,
         cost,
-        bookingUrl: POIRIER_BOOKING_URL,
+        bookingUrl:
+          category === "public_skate"
+            ? "https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"
+            : POIRIER_BOOKING_URL,
         source: "live",
         activityId,
         externalId,
@@ -238,7 +241,10 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
       goalieSpots: opts.goalieSpots ?? null,
       goaliesRegistered: opts.goaliesRegistered ?? null,
       cost: opts.cost ?? null,
-      bookingUrl: POIRIER_BOOKING_URL,
+      bookingUrl:
+        opts.category === "public_skate"
+          ? "https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"
+          : POIRIER_BOOKING_URL,
       source: "schedule",
       externalId: null,
     });
