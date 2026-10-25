@@ -8,6 +8,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { FACILITIES, type FacilitySeed } from "../domain";
 import { collectActiveNet, resetActiveNetCache } from "./activenet";
+import { fetchBurnabySessions } from "./burnaby";
 import { collectVancouver, resetVancouverCache } from "./vancouver";
 import { collectPerfectMind, resetPerfectMindCache } from "./perfectmind";
 import { collectCanlan } from "./canlan";
@@ -55,6 +56,7 @@ function collectorFor(f: FacilitySeed) {
   if (f.bookingPlatform === "canlan") return collectCanlan;
   if (f.bookingPlatform === "perfectmind") return collectPerfectMind;
   if (f.municipality === "Vancouver") return collectVancouver;
+  if (f.municipality === "Burnaby") return fetchBurnabySessions;
   return collectActiveNet;
 }
 

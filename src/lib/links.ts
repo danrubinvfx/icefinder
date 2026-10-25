@@ -30,11 +30,14 @@ export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
   kensington:
     "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/kensington-complex",
   "bill-copeland":
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
 };
 
+export const BURNABY_DAILY_ACTIVITIES_URL =
+  "https://www.burnaby.ca/recreation-and-arts/activities-and-registration/daily-activities";
+
 export const BURNABY_PUBLIC_SKATE_SEARCH_FALLBACK =
-  "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
+  BURNABY_DAILY_ACTIVITIES_URL;
 
 export const BURNABY_FIGURE_SKATING_RESERVE_URL =
   "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=figure%20skating%20reserve&viewMode=list";
@@ -64,10 +67,13 @@ export function getBurnabyCategoryUrl(category: Category | string, facilitySlug?
 }
 
 export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
+  if (facilitySlug === "bill-copeland") {
+    return "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list";
+  }
   if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
     return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
   }
-  return "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
+  return BURNABY_DAILY_ACTIVITIES_URL;
 }
 
 export function getBurnabyDetailUrl(activityId: number | string): string {
@@ -85,7 +91,7 @@ export function getBurnabyFallbackUrl(
   if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
     return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
   }
-  return "https://www.burnaby.ca/recreation-and-arts/recreation-facilities";
+  return BURNABY_DAILY_ACTIVITIES_URL;
 }
 
 export function getBurnabyUrl(opts: {
