@@ -12,6 +12,7 @@
 import { PrismaClient } from "@prisma/client";
 import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
 import { resolveBookingUrl } from "../src/lib/links";
+import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -65,6 +66,21 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
 async function once() {
   try {
     const report = await runIngestion(prisma, opts);
+
+    // Arena-level sync for Poirier Sport & Leisure Complex
+    if (!opts.only?.length || opts.only.includes("poirier")) {
+      try {
+        console.log("\n▶ Arena-level sync: Poirier Sport & Leisure Complex [perfectmind]");
+        const windowFrom = new Date(Date.now() - 3 * 3_600_000);
+        const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
+        const poirierSessions = await fetchPoirierSessions(windowFrom, windowTo);
+        const count = await upsertPoirierSessions(prisma, poirierSessions);
+        console.log(`  ✓ Poirier: ${count} verified sessions synchronized to database.`);
+      } catch (poirierErr) {
+        console.error("  ✗ Poirier arena-level ingestion failed:", poirierErr);
+      }
+    }
+
     await sanitizeAllDatabaseRows(prisma);
     console.table(report.results.map(({ error, ...r }) => ({ ...r, error: error?.slice(0, 60) ?? "" })));
     return report.status;

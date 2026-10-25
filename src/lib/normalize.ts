@@ -24,7 +24,7 @@ export function normalizeCategory(rawTitle: string): Category | null {
     return null;
   }
 
-  if (/stick\s*(&|and|n)\s*puck|shoot\s*(&|and|n)\s*score|stick-and-puck/.test(t)) {
+  if (/stick\s*(&|and|n)\s*puck|shoot\s*(&|and|n)\s*score|stick-and-puck|stick.*ring.*puck|stick.*puck.*ring/.test(t)) {
     return "stick_and_puck";
   }
   if (/buy[\s-]?on|figure skat|freestyle|open session champs|patch/.test(t)) {
@@ -33,7 +33,7 @@ export function normalizeCategory(rawTitle: string): Category | null {
   if (/shinny|drop[\s-]?in hockey|recreational hockey|rec hockey|pick[\s-]?up hockey|adult hockey|hockey drop/.test(t)) {
     return "hockey_dropin";
   }
-  if (/(leisure|public|family|adult|toonie|everyone welcome|parent\s*&?\s*tot|youth|senior|55\+|discount)\s*skat/.test(t) || /^skat(e|ing)\b/.test(t)) {
+  if (/(leisure|public|family|adult|toonie|everyone welcome|parent\s*&?\s*tot|youth|senior|55\+|discount|community)\s*skat/.test(t) || /^skat(e|ing)\b/.test(t)) {
     return "public_skate";
   }
   return null;

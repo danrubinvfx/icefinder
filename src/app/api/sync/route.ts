@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { runIngestion } from "@/lib/ingest/engine";
+import { fetchPoirierSessions, upsertPoirierSessions } from "@/lib/ingest/poirier";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -30,6 +31,17 @@ async function handle(req: NextRequest) {
 
   try {
     const report = await runIngestion(prisma, { mode, days: 8 });
+
+    // Arena-level sync for Poirier Sport & Leisure Complex
+    try {
+      const windowFrom = new Date(Date.now() - 3 * 3_600_000);
+      const windowTo = new Date(Date.now() + 8 * 86_400_000);
+      const poirierSessions = await fetchPoirierSessions(windowFrom, windowTo);
+      await upsertPoirierSessions(prisma, poirierSessions);
+    } catch (poirierErr) {
+      console.error("[IceFinder] Poirier arena sync error:", poirierErr);
+    }
+
     return NextResponse.json(report, {
       status: report.status === "failed" ? 502 : 200,
     });

@@ -9,6 +9,7 @@ import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
 import { resolveBookingUrl } from "../links";
+import { generatePoirierTimetable } from "./poirier";
 import type { IngestWindow, NormalizedSession } from "./types";
 
 interface Template {
@@ -267,6 +268,9 @@ function expand(
 }
 
 export function mockSessionsFor(facility: FacilitySeed, window: IngestWindow): NormalizedSession[] {
+  if (facility.slug === "poirier") {
+    return generatePoirierTimetable(window.from, window.to);
+  }
   const tpls = MOCK_TEMPLATES[facility.slug] ?? [
     { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 150, cost: 7 },
     { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 8 },
@@ -276,6 +280,9 @@ export function mockSessionsFor(facility: FacilitySeed, window: IngestWindow): N
 }
 
 export function publicSkateScheduleFor(facility: FacilitySeed, window: IngestWindow): NormalizedSession[] {
+  if (facility.slug === "poirier") {
+    return [];
+  }
   const tpls = PUBLIC_SKATE_SCHEDULE[facility.slug] ?? [];
   return expand(facility, tpls, window, "schedule");
 }

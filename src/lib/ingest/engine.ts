@@ -12,6 +12,7 @@ import { collectVancouver, resetVancouverCache } from "./vancouver";
 import { collectPerfectMind, resetPerfectMindCache } from "./perfectmind";
 import { collectCanlan } from "./canlan";
 import { mockSessionsFor, publicSkateScheduleFor } from "./mock";
+import { fetchPoirierSessions, poirierSessionKey } from "./poirier";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 import { sessionKey } from "../normalize";
 
@@ -46,6 +47,11 @@ const consoleLogger: IngestLogger = {
 };
 
 function collectorFor(f: FacilitySeed) {
+  if (f.slug === "poirier") {
+    return async (_facility: FacilitySeed, window: IngestWindow) => {
+      return fetchPoirierSessions(window.from, window.to);
+    };
+  }
   if (f.bookingPlatform === "canlan") return collectCanlan;
   if (f.bookingPlatform === "perfectmind") return collectPerfectMind;
   if (f.municipality === "Vancouver") return collectVancouver;
@@ -57,7 +63,10 @@ function mergeByKey(...lists: NormalizedSession[][]): NormalizedSession[] {
   const map = new Map<string, NormalizedSession>();
   for (const list of lists)
     for (const s of list) {
-      const k = sessionKey(s.facilitySlug, s.startTime, s.category);
+      const k =
+        s.facilitySlug === "poirier"
+          ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
+          : sessionKey(s.facilitySlug, s.startTime, s.category);
       if (!map.has(k)) map.set(k, s);
     }
   return [...map.values()];
@@ -130,7 +139,10 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
 
       const seen: string[] = [];
       for (const s of sessions) {
-        const id = sessionKey(s.facilitySlug, s.startTime, s.category);
+        const id =
+          s.facilitySlug === "poirier"
+            ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
+            : sessionKey(s.facilitySlug, s.startTime, s.category);
         seen.push(id);
         const existing = await prisma.iceSession.findUnique({ where: { id }, select: { id: true } });
         await prisma.iceSession.upsert({
