@@ -16,6 +16,9 @@ import type { NormalizedSession } from "./types";
 export const POIRIER_BOOKING_URL =
   "https://cityofcoquitlam.perfectmind.com/Contacts/BookMe4BookingPages/Classes?calendarId=4f07c977-74de-46ab-9d0a-2397f83f254f&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
 
+export const POIRIER_PUBLIC_SKATE_BOOKING_URL =
+  "https://cityofcoquitlam.perfectmind.com/Contacts/BookMe4BookingPages/Classes?calendarId=b7685f76-3d81-4fac-b270-60659b414ff6&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
+
 const POIRIER_API_URL =
   "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
 
@@ -169,7 +172,8 @@ async function fetchLivePoirierClasses(startDate: Date, endDate: Date): Promise<
         goalieSpots: null,
         goaliesRegistered: null,
         cost,
-        bookingUrl: POIRIER_BOOKING_URL,
+        bookingUrl:
+          category === "public_skate" ? POIRIER_PUBLIC_SKATE_BOOKING_URL : POIRIER_BOOKING_URL,
         source: "live",
         activityId,
         externalId,
@@ -238,7 +242,8 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
       goalieSpots: opts.goalieSpots ?? null,
       goaliesRegistered: opts.goaliesRegistered ?? null,
       cost: opts.cost ?? null,
-      bookingUrl: POIRIER_BOOKING_URL,
+      bookingUrl:
+        opts.category === "public_skate" ? POIRIER_PUBLIC_SKATE_BOOKING_URL : POIRIER_BOOKING_URL,
       source: "schedule",
       externalId: null,
     });

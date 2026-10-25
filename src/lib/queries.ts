@@ -26,6 +26,7 @@ export interface SessionDTO {
   cost: number | null;
   bookingUrl: string;
   source: string;
+  is_walkin?: boolean;
   activityId?: number | null;
   externalId?: string | null;
   updatedAt: string;

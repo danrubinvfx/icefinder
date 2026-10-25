@@ -123,14 +123,20 @@ export function getVancouverFallbackUrl(
 }
 
 // ── Coquitlam (PerfectMind) ─────────────────────────────────────────────
-export const COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL =
+export const COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL =
   "https://cityofcoquitlam.perfectmind.com/Contacts/BookMe4BookingPages/Classes?calendarId=4f07c977-74de-46ab-9d0a-2397f83f254f&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
 
+export const COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL =
+  "https://cityofcoquitlam.perfectmind.com/Contacts/BookMe4BookingPages/Classes?calendarId=b7685f76-3d81-4fac-b270-60659b414ff6&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
+
+export const COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL =
+  COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL;
+
 export const COQUITLAM_PERFECTMIND_SKATING_URL =
-  COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+  COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL;
 
 export const COQUITLAM_FACILITY_SCHEDULE_URLS: Record<string, string> = {
-  poirier: COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL,
+  poirier: COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
 };
 
 export function getCoquitlamUrl(
@@ -147,20 +153,27 @@ export function getCoquitlamUrl(
   source?: string | null,
   rawTitle?: string | null,
 ): string {
-  void categoryOrOpts;
+  let cat: Category | string | undefined;
+  if (categoryOrOpts && typeof categoryOrOpts === "object") {
+    cat = categoryOrOpts.category;
+  } else {
+    cat = categoryOrOpts;
+  }
   void facilitySlug;
   void source;
   void rawTitle;
-  return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+
+  if (cat === "public_skate") {
+    return COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL;
+  }
+  return COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL;
 }
 
 export function getCoquitlamFallbackUrl(
   category?: Category | string,
   facilitySlug?: string | null,
 ): string {
-  void category;
-  void facilitySlug;
-  return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+  return getCoquitlamUrl(category, facilitySlug);
 }
 
 // ── Richmond (PerfectMind) ──────────────────────────────────────────────
@@ -278,7 +291,7 @@ export function resolveBookingUrl(opts: {
 
   // 4. Coquitlam / Poirier (PerfectMind)
   if (municipality === "Coquitlam" || facilitySlug === "poirier") {
-    return COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL;
+    return getCoquitlamUrl(category);
   }
 
   // 5. Delta (PerfectMind)

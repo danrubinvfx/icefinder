@@ -7,7 +7,11 @@
 import { fromZonedTime } from "date-fns-tz";
 import { TIMEZONE, type FacilitySeed } from "../domain";
 import { cleanTitle, isGoalieListing, normalizeCategory, sessionKey } from "../normalize";
-import { resolveBookingUrl, COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL } from "../links";
+import {
+  resolveBookingUrl,
+  COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
+  COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
+} from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
@@ -200,7 +204,9 @@ export async function collectPerfectMind(
     const externalId = c.EventId ? `perfectmind:${c.EventId}` : null;
     const bookingUrl =
       facility.municipality === "Coquitlam" || facility.slug === "poirier"
-        ? COQUITLAM_PERFECTMIND_SKATING_CALENDAR_URL
+        ? (category === "public_skate"
+            ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
+            : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
         : resolveBookingUrl({
             category,
             bookingPlatform: facility.bookingPlatform,

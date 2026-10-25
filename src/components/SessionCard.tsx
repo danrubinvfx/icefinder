@@ -18,9 +18,13 @@ export function goalieNeeded(s: SessionDTO) {
 }
 
 export function CapacityChip({ s }: { s: SessionDTO }) {
-  if (s.source === "schedule") {
+  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin);
+  if (isWalkIn) {
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+      <span
+        title="First-come, first-served at the front desk. No online reservation required."
+        className="inline-flex h-7 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+      >
         <Footprints className="size-3.5" aria-hidden /> Walk-in · pay at door
       </span>
     );
@@ -51,6 +55,7 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
 
 export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: string }) {
   const style = CATEGORY_STYLE[s.category];
+  const isWalkIn = s.source === "schedule" || Boolean(s.is_walkin);
   const full = s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
   const isReservable =
@@ -137,6 +142,12 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               </span>
             )}
           </div>
+
+          {isWalkIn && (
+            <p className="text-xs text-slate-500">
+              First-come, first-served at the front desk. No online reservation required.
+            </p>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-3 sm:flex-col sm:items-end sm:justify-center">
