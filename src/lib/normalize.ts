@@ -52,7 +52,7 @@ export function cleanTitle(rawTitle: string): string {
     .trim();
 }
 
-/** Composite dedupe key. Same facility + same start instant + same category = same slot. */
-export function sessionKey(facilitySlug: string, startTime: Date, category: Category): string {
-  return `${facilitySlug}|${startTime.toISOString()}|${category}`;
+/** Composite dedupe key: facility_slug + '_' + startTime + '_' + category. */
+export function sessionKey(facilitySlug: string, startTime: Date, category: Category | string): string {
+  return `${facilitySlug}_${startTime.toISOString()}_${category}`;
 }

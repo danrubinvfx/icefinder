@@ -17,6 +17,9 @@ import { fetchPoirierSessions, poirierSessionKey } from "./poirier";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 import { sessionKey } from "../normalize";
 
+export const POLITE_FACILITY_COOLDOWN_MS = 1500;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export interface IngestOptions {
   mode: "auto" | "live" | "mock"; // auto = live with per-rink mock fallback
   days: number;
@@ -118,16 +121,36 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
 
   tee.info(`IceFinder ingest • mode=${opts.mode} • window ${window.from.toISOString()} → ${window.to.toISOString()}`);
 
+  // Clean up any legacy pipe-delimited composite keys before upserting deterministic underscore keys
+  try {
+    await prisma.iceSession.deleteMany({
+      where: { id: { contains: "|" } },
+    });
+  } catch (cleanupErr) {
+    tee.warn(`Legacy key cleanup warning: ${(cleanupErr as Error).message}`);
+  }
+
   const targets = FACILITIES.filter((f) => !opts.only?.length || opts.only.includes(f.slug));
   const results: FacilityResult[] = [];
 
-  for (const facility of targets) {
+  for (let i = 0; i < targets.length; i++) {
+    const facility = targets[i];
+    if (i > 0 && opts.mode !== "mock") {
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+    }
     const result: FacilityResult = { slug: facility.slug, status: "failed", collected: 0, created: 0, updated: 0, pruned: 0 };
-    tee.info(`\n▶ ${facility.name} [${facility.bookingPlatform}]`);
+    tee.info(`\n▶ ${facility.name} (${facility.municipality}) [${facility.bookingPlatform}]`);
     try {
       const dbFacility = await prisma.facility.upsert({
         where: { slug: facility.slug },
-        update: {},
+        update: {
+          name: facility.name,
+          municipality: facility.municipality,
+          address: facility.address,
+          lat: facility.lat,
+          lng: facility.lng,
+          bookingPlatform: facility.bookingPlatform,
+        },
         create: {
           slug: facility.slug,
           name: facility.name,
@@ -146,8 +169,14 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
       } else {
         try {
           primary = await collectorFor(facility)(facility, window, tee);
-          result.status = "live";
-          tee.info(`  ✓ live: ${primary.length} normalized sessions`);
+          if (primary.length === 0 && opts.mode === "auto") {
+            tee.warn(`  ! live returned 0 sessions for ${facility.slug} → supplementing with fallback schedule`);
+            primary = mockSessionsFor(facility, window);
+            result.status = "fallback";
+          } else {
+            result.status = "live";
+            tee.info(`  ✓ live: ${primary.length} normalized sessions`);
+          }
         } catch (err) {
           const msg = (err as Error).message;
           result.error = msg;

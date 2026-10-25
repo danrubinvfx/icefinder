@@ -1,8 +1,8 @@
 #!/usr/bin/env -S npx tsx
 /**
- * IceFinder ingestion CLI.
+ * IceFinder ingestion CLI — Multi-municipality sweep across Metro Vancouver.
  *
- *   npx tsx scripts/ingest.ts                 # live, with per-rink mock fallback (default)
+ *   npx tsx scripts/ingest.ts                 # live, with per-rink fallback (default)
  *   npx tsx scripts/ingest.ts --mock          # mock data only (offline demo)
  *   npx tsx scripts/ingest.ts --live          # live only; failing rinks are logged + skipped
  *   npx tsx scripts/ingest.ts --days 10       # look-ahead window (default 8)
@@ -10,7 +10,8 @@
  *   npx tsx scripts/ingest.ts --watch 15      # long-running: re-sync every 15 minutes
  */
 import { PrismaClient } from "@prisma/client";
-import { runIngestion, type IngestOptions } from "../src/lib/ingest/engine";
+import { FACILITIES, type Category } from "../src/lib/domain";
+import { runIngestion, POLITE_FACILITY_COOLDOWN_MS, type IngestOptions } from "../src/lib/ingest/engine";
 import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
@@ -35,6 +36,36 @@ const intervalMin = watch !== undefined ? Number(watch || 15) : 0;
 
 const prisma = new PrismaClient();
 
+async function seedAllFacilities(prismaClient: PrismaClient) {
+  for (const f of FACILITIES) {
+    try {
+      await prismaClient.facility.upsert({
+        where: { slug: f.slug },
+        update: {
+          name: f.name,
+          municipality: f.municipality,
+          address: f.address,
+          lat: f.lat,
+          lng: f.lng,
+          bookingPlatform: f.bookingPlatform,
+        },
+        create: {
+          slug: f.slug,
+          name: f.name,
+          municipality: f.municipality,
+          address: f.address,
+          lat: f.lat,
+          lng: f.lng,
+          bookingPlatform: f.bookingPlatform,
+        },
+      });
+    } catch (err) {
+      console.error(`Failed to seed facility ${f.slug}:`, err);
+    }
+  }
+  console.log(`Seeded ${FACILITIES.length} facilities across 5 Metro Vancouver municipalities (POLITE_FACILITY_COOLDOWN_MS=${POLITE_FACILITY_COOLDOWN_MS}).`);
+}
+
 async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
   const sessions = await prismaClient.iceSession.findMany({
     include: { facility: true },
@@ -49,7 +80,7 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
         : resolveBookingUrl({
             bookingUrl: s.bookingUrl,
-            category: s.category as any,
+            category: s.category as Category,
             bookingPlatform: s.facility.bookingPlatform,
             activityId: s.activityId,
             externalId: s.externalId,
@@ -74,6 +105,7 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
 
 async function once() {
   try {
+    await seedAllFacilities(prisma);
     const report = await runIngestion(prisma, opts);
 
     // Arena-level sync for Poirier Sport & Leisure Complex

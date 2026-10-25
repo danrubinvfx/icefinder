@@ -18,6 +18,9 @@ const BASE = "https://anc.ca.apm.activecommunities.com/burnaby/rest/activities/l
 const KEYWORDS = ["Recreational Hockey", "Shoot", "Figure Skating", "Stick", "Shinny"];
 const PAGE_SIZE = 20; // ActiveNet caps pages at 20 records
 const MAX_PAGES_PER_KEYWORD = 12;
+export const POLITE_FACILITY_COOLDOWN_MS = 1500;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface ActiveNetItem {
   id: number;
@@ -50,6 +53,9 @@ async function fetchKeyword(keyword: string, window: IngestWindow, log: IngestLo
   const items: ActiveNetItem[] = [];
   const lastDay = toYmd(window.to);
   for (let page = 1; page <= MAX_PAGES_PER_KEYWORD; page++) {
+    if (page > 1) {
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+    }
     const data = await fetchJson<ActiveNetResponse>(BASE, {
       method: "POST",
       headers: {

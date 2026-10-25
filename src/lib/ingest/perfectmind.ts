@@ -35,6 +35,8 @@ interface PerfectMindClassesResponse {
 }
 
 const perfectmindCache = new Map<string, Promise<PerfectMindClass[]>>();
+export const POLITE_FACILITY_COOLDOWN_MS = 1500;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function resetPerfectMindCache() {
   perfectmindCache.clear();
@@ -138,25 +140,33 @@ export async function collectPerfectMind(
 ): Promise<NormalizedSession[]> {
   let classes: PerfectMindClass[] = [];
 
-  if (facility.municipality === "Richmond") {
-    const calendarId =
-      facility.slug === "richmond-ice-centre"
-        ? "8bd697eb-ee1e-4067-b6bb-be1901a7753d"
-        : "6ef4a37b-91d1-432a-a92e-9828e83b4c10";
-    const url =
-      "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
-    classes = await getPerfectMindClassesCached(url, calendarId, log, `Richmond ${facility.shortName}`);
-  } else if (facility.municipality === "Coquitlam") {
-    const calendarId = "4f07c977-74de-46ab-9d0a-2397f83f254f";
-    const url =
-      "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
-    classes = await getPerfectMindClassesCached(url, calendarId, log, "Coquitlam Poirier");
-  } else if (facility.municipality === "Delta") {
-    const calendarId = "c9b7ca71-56dc-43e3-aec7-d976239a5660";
-    const url =
-      "https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9";
-    const allDelta = await getPerfectMindClassesCached(url, calendarId, log, "Delta All Arenas");
-    classes = allDelta.filter((c) => matchesDeltaFacility(c.Location ?? "", facility.slug));
+  try {
+    if (facility.municipality === "Richmond") {
+      const calendarId =
+        facility.slug === "richmond-ice-centre"
+          ? "8bd697eb-ee1e-4067-b6bb-be1901a7753d"
+          : "6ef4a37b-91d1-432a-a92e-9828e83b4c10";
+      const url =
+        "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      classes = await getPerfectMindClassesCached(url, calendarId, log, `Richmond ${facility.shortName}`);
+    } else if (facility.municipality === "Coquitlam") {
+      const calendarId = "4f07c977-74de-46ab-9d0a-2397f83f254f";
+      const url =
+        "https://cityofcoquitlam.perfectmind.com/23902/Clients/BookMe4BookingPages/Classes?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      classes = await getPerfectMindClassesCached(url, calendarId, log, "Coquitlam Poirier");
+    } else if (facility.municipality === "Delta") {
+      const calendarId = "c9b7ca71-56dc-43e3-aec7-d976239a5660";
+      const url =
+        "https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9";
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      const allDelta = await getPerfectMindClassesCached(url, calendarId, log, "Delta All Arenas");
+      classes = allDelta.filter((c) => matchesDeltaFacility(c.Location ?? "", facility.slug));
+    }
+  } catch (err) {
+    log.warn(`  perfectmind: sweep error for ${facility.slug} (${(err as Error).message})`);
+    classes = [];
   }
 
   const sessions = new Map<string, NormalizedSession>();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { track } from "@vercel/analytics";
 import {
   ExternalLink,
   Clock,
@@ -29,8 +30,57 @@ const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }
 
 const FACILITY_BY_SLUG = new Map(FACILITIES.map((f) => [f.slug, f]));
 
-export function goalieNeeded(s: SessionDTO) {
-  return s.category === "hockey_dropin" && s.goaliesRegistered !== null && s.goaliesRegistered <= 1;
+export type DivisionChip =
+  | "19+ Adult"
+  | "30+"
+  | "50+"
+  | "Youth (11-18)"
+  | "Family / All Ages"
+  | "Buy-On / StarSkate";
+
+export function goalieNeeded(s: SessionDTO): boolean {
+  if (s.category !== "hockey_dropin") return false;
+  if (s.goalieSpots !== null && s.goalieSpots > 0) {
+    if (s.goaliesRegistered === null) return true;
+    return s.goaliesRegistered < s.goalieSpots;
+  }
+  if (s.goaliesRegistered !== null && s.goaliesRegistered <= 1) return true;
+  return /goalie\s*(needed|wanted|spots?\s*open|required)/i.test(s.rawTitle);
+}
+
+export function goalieFree(s: SessionDTO): boolean {
+  if (s.category !== "hockey_dropin") return false;
+  return Boolean(s.isGoalieFree) || /goalies?\s*(are\s*)?(free|\$0)|free\s*(for\s*)?goalies?/i.test(s.rawTitle);
+}
+
+export function parseDivisionChips(s: SessionDTO): DivisionChip[] {
+  const chips: DivisionChip[] = [];
+  const t = s.rawTitle.toLowerCase();
+
+  const is30Plus = /\b30\s*(\+|yrs|years)/i.test(t);
+  const is50Plus = /\b(50|55|60)\s*(\+|yrs|years)|\bsenior/i.test(t);
+  const isYouth = /\byouth\b|\b1[1-3]\s*-\s*1[7-8]\b|\bteen/i.test(t);
+  const isParentChild = /\b(adult\s*&\s*child|parent\s*&?\s*tot|0\s*-\s*6)\b/i.test(t);
+  const isAdult =
+    !is30Plus &&
+    !is50Plus &&
+    !isParentChild &&
+    (/\b(18|19)\s*(\+|yrs|years|&\s*over|and\s*over)/i.test(t) || /\badults?\b/i.test(t) || /\bshinny\b/i.test(t));
+  const isFamilyOrAllAges =
+    isParentChild ||
+    /\b(family|all\s*ages|everyone\s*welcome|public\s*skate|leisure\s*skate|community\s*skate|3\+)\b/i.test(t) ||
+    (!is30Plus && !is50Plus && !isYouth && !isAdult && /\btoonie\s*skate\b/i.test(t));
+  const isBuyOn =
+    s.category === "figure_buyon" || /\b(buy[\s-]?on|starskate|star\s*\d|figure\s*skat|freestyle|patch)\b/i.test(t);
+
+  if (isAdult) chips.push("19+ Adult");
+  if (is30Plus) chips.push("30+");
+  if (is50Plus) chips.push("50+");
+  if (isYouth) chips.push("Youth (11-18)");
+  if (isFamilyOrAllAges) chips.push("Family / All Ages");
+  if (isBuyOn) chips.push("Buy-On / StarSkate");
+
+  return chips;
 }
 
 export function CapacityChip({ s }: { s: SessionDTO }) {
@@ -80,6 +130,8 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
       s.category === "figure_buyon");
   const full = isReservable && s.source !== "schedule" && s.openSpots <= 0;
   const needsGoalie = goalieNeeded(s);
+  const isFreeGoalie = goalieFree(s);
+  const divisionChips = parseDivisionChips(s);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -109,6 +161,14 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     source: s.source,
     rawTitle: s.rawTitle,
   });
+
+  const handleOutboundClick = () => {
+    track("outbound_click", {
+      facility_slug: s.facilitySlug,
+      category: s.category,
+      title: s.rawTitle,
+    });
+  };
 
   const facilityMeta = FACILITY_BY_SLUG.get(s.facilitySlug);
   const facilityAddress = facilityMeta?.address ?? `${s.facilityName}, ${s.municipality}, BC`;
@@ -141,13 +201,26 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
         <span className={`absolute inset-y-0 left-0 w-1.5 ${style.bar}`} aria-hidden />
         <div className="flex flex-col gap-3 p-4 pl-5 sm:flex-row sm:items-center sm:gap-5">
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.bg} ${style.text}`}>
                 {CATEGORY_SHORT[s.category]}
               </span>
+              {divisionChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80"
+                >
+                  {chip}
+                </span>
+              ))}
               {needsGoalie && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800">
-                  <ShieldHalf className="size-3" aria-hidden /> Goalie needed
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-amber-300/80">
+                  <ShieldHalf className="size-3" aria-hidden /> Goalie Needed
+                </span>
+              )}
+              {isFreeGoalie && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">
+                  <ShieldHalf className="size-3" aria-hidden /> Goalies Free
                 </span>
               )}
               {s.source === "mock" && (
@@ -215,6 +288,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 href={destinationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleOutboundClick}
                 className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2 ${
                   full ? "bg-slate-100 text-slate-700 hover:bg-slate-200" : "bg-ice-600 text-white hover:bg-ice-700"
                 }`}
@@ -301,7 +375,10 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
 
               <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-950">
                 <p className="font-bold text-amber-900">Walk-In Admission Only</p>
-                <p className="mt-1">
+                <p className="mt-1 font-medium text-amber-900">
+                  Admission is managed at the arena front desk. Always verify facility status before heading over.
+                </p>
+                <p className="mt-1 text-amber-800/90">
                   First-come, first-served at the facility front desk. The City of {s.municipality || "Vancouver"} does not take online pre-registration for general public skating sessions.
                 </p>
               </div>
@@ -318,6 +395,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   href={googleMapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={handleOutboundClick}
                   className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
                 >
                   <Navigation className="size-3.5" aria-hidden />

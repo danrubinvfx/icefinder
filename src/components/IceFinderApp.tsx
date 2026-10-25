@@ -17,6 +17,7 @@ import {
   weekendDays,
 } from "@/lib/time";
 import { SessionCard, goalieNeeded } from "./SessionCard";
+import { Footer } from "./Footer";
 
 type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
 type CategoryFilter = "all" | Category;
@@ -677,11 +678,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
           </div>
         </section>
 
-        <footer className="pt-6 text-center text-xs leading-relaxed text-slate-400">
-          Data from Burnaby, Vancouver, Richmond, Coquitlam, Delta & Canlan Sports. Always confirm on the booking
-          site. <br />
-          icefinder.ca · Built for Metro Vancouver skaters
-        </footer>
+        <Footer />
       </main>
     </div>
   );
