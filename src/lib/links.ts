@@ -17,11 +17,11 @@ export const BURNABY_CENTER_IDS: Record<string, number> = {
 
 export const BURNABY_FACILITY_URLS: Record<string, string> = {
   "rosemary-brown":
-    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=180&viewMode=list",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&center_ids=180&viewMode=list",
   kensington:
-    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=147&viewMode=list",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&center_ids=147&viewMode=list",
   "bill-copeland":
-    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&activity_select_param=2&activity_keyword=hockey%20reserve&center_ids=146&viewMode=list",
 };
 
 export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
@@ -30,7 +30,7 @@ export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
   kensington:
     "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/kensington-complex",
   "bill-copeland":
-    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
+    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre",
 };
 
 export const BURNABY_DAILY_ACTIVITIES_URL =
@@ -67,9 +67,6 @@ export function getBurnabyCategoryUrl(category: Category | string, facilitySlug?
 }
 
 export function getBurnabyPublicSkateUrl(facilitySlug?: string | null): string {
-  if (facilitySlug === "bill-copeland") {
-    return "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list";
-  }
   if (facilitySlug && BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug]) {
     return BURNABY_FACILITY_SCHEDULE_URLS[facilitySlug];
   }
@@ -98,12 +95,14 @@ export function getBurnabyUrl(opts: {
   category?: Category | string;
   activityId?: number | string | null;
   externalId?: string | null;
+  external_id?: string | null;
   facilitySlug?: string | null;
 }): string {
   if (opts.category === "public_skate") {
     return getBurnabyPublicSkateUrl(opts.facilitySlug);
   }
-  const rawId = opts.activityId ?? (opts.externalId ? opts.externalId.replace(/\D/g, "") : null);
+  const rawExt = opts.external_id ?? opts.externalId;
+  const rawId = opts.activityId ?? (rawExt ? String(rawExt).replace(/^activenet:/i, "").replace(/\D/g, "") : null);
   if (rawId) {
     return getBurnabyDetailUrl(rawId);
   }
@@ -274,19 +273,21 @@ export function resolveBookingUrl(opts: {
   bookingPlatform?: string;
   activityId?: number | null;
   externalId?: string | null;
+  external_id?: string | null;
   facilitySlug?: string | null;
   municipality?: string | null;
   source?: string | null;
   rawTitle?: string | null;
 }): string {
-  const { bookingUrl, category, bookingPlatform, activityId, externalId, facilitySlug, municipality, source, rawTitle } = opts;
+  const { bookingUrl, category, bookingPlatform, activityId, externalId, external_id, facilitySlug, municipality, source, rawTitle } = opts;
+  const rawExternalId = external_id ?? externalId;
   void source;
   void rawTitle;
 
   // 1. Scotia Barn / Canlan (DaySmart)
   if (bookingPlatform === "canlan" || facilitySlug === "scotia-barn" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
     const eventIdMatch = bookingUrl?.match(/event\/(\d+)/i);
-    const canlanId = eventIdMatch ? eventIdMatch[1] : (externalId ? externalId.replace(/\D/g, "") : (activityId ? String(activityId) : null));
+    const canlanId = eventIdMatch ? eventIdMatch[1] : (rawExternalId ? rawExternalId.replace(/\D/g, "") : (activityId ? String(activityId) : null));
     if (canlanId) {
       return getCanlanEventUrl(canlanId);
     }
@@ -295,7 +296,7 @@ export function resolveBookingUrl(opts: {
 
   // 2. City of Vancouver (ActiveNet)
   if (municipality === "Vancouver" || (facilitySlug && ["britannia", "hillcrest", "kitsilano", "trout-lake", "sunset", "killarney"].includes(facilitySlug))) {
-    const rawId = activityId ?? (externalId ? externalId.replace(/\D/g, "") : null);
+    const rawId = activityId ?? (rawExternalId ? rawExternalId.replace(/\D/g, "") : null);
     if (rawId) {
       return getVancouverDetailUrl(rawId);
     }
@@ -321,7 +322,11 @@ export function resolveBookingUrl(opts: {
   if (category === "public_skate") {
     return getBurnabyPublicSkateUrl(facilitySlug);
   }
-  const burnabyId = activityId ?? (externalId ? externalId.replace(/\D/g, "") : null);
+  const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
+  const burnabyId =
+    activityId ??
+    (rawExternalId ? String(rawExternalId).replace(/^activenet:/i, "").replace(/\D/g, "") : null) ??
+    (detailMatch ? detailMatch[1] : null);
   if (burnabyId) {
     return getBurnabyDetailUrl(burnabyId);
   }

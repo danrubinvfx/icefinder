@@ -17,7 +17,7 @@ export { collectActiveNet, resetActiveNetCache };
 export const collectBurnaby = collectActiveNet;
 
 export const BILL_COPELAND_PUBLIC_SKATE_SCHEDULE_URL =
-  "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list";
+  "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre";
 export const BURNABY_DAILY_ACTIVITIES_URL =
   "https://www.burnaby.ca/recreation-and-arts/activities-and-registration/daily-activities";
 

@@ -29,6 +29,7 @@ export interface SessionDTO {
   is_walkin?: boolean;
   activityId?: number | null;
   externalId?: string | null;
+  external_id?: string | null;
   updatedAt: string;
 }
 
@@ -102,8 +103,10 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
           rawTitle: s.rawTitle,
         }),
         source: s.source,
+        is_walkin: s.category === "public_skate" || s.source === "schedule",
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
+        external_id: s.externalId ?? null,
         updatedAt: new Date(now - 5 * 60_000).toISOString(),
       });
     }
@@ -192,8 +195,10 @@ export async function getFeed(): Promise<FeedPayload> {
             rawTitle: r.rawTitle,
           }),
           source: r.source,
+          is_walkin: (r.category as Category) === "public_skate" || r.source === "schedule",
           activityId: r.activityId ?? null,
           externalId: r.externalId,
+          external_id: r.externalId,
           updatedAt: r.updatedAt.toISOString(),
         })),
         facilities: facilities.map((f) => ({
