@@ -19,14 +19,12 @@ jobs:
 ```[cite: 13]
 
 4. Click the green **Commit changes...** button at the top right.
-5. Select **Commit directly to the `main` branch** and confirm.
+5. Choose **Commit directly to the `main` branch** and confirm.
 
 ---
 
-### Verify It Immediately
+### Verification
+Once committed, visit:  
+👉 **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**
 
-1. Go back to: **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**
-2. The page will reload cleanly. The **`Run workflow ▾`** button will appear in the top-right corner.
-3. Click **`Run workflow ▾`** $\to$ click the green **`Run workflow`** button. 
-
-With all explanatory text removed and the timeout raised to 300s, it will execute cleanly and finish with a solid green checkmark.
+With no prose left in the file, GitHub will parse `workflow_dispatch:` properly[cite: 13] and the **Run workflow ▾** button will appear at the top-right.
