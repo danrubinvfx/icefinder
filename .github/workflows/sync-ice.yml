@@ -18,13 +18,16 @@ jobs:
             --max-time 300
 ```[cite: 13]
 
-4. Click the green **Commit changes...** button at the top right.
-5. Choose **Commit directly to the `main` branch** and confirm.
+---
+
+### Step 4: Commit
+1. Click the green **Commit changes...** button at the top right[cite: 10].
+2. Leave **Commit directly to the `main` branch** selected[cite: 10].
+3. Click **Commit changes**[cite: 10].
 
 ---
 
-### Verification
-Once committed, visit:  
-👉 **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**
-
-With no prose left in the file, GitHub will parse `workflow_dispatch:` properly[cite: 13] and the **Run workflow ▾** button will appear at the top-right.
+### Step 5: Test the Workflow
+1. Go to: **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**[cite: 5]
+2. Because the file now contains valid YAML without prose, the **`Run workflow ▾`** dropdown button will appear in the upper right[cite: 2, 5].
+3. Click **`Run workflow ▾`** $\to$ click the green **`Run workflow`** button[cite: 2].
