@@ -12,7 +12,31 @@ jobs:
     steps:
       - name: Trigger Live Sync
         run: |
-          curl -X GET "https://icefinder-ecru.vercel.app/api/sync" \
+          curl -i -X GET "https://icefinder-ecru.vercel.app/api/sync" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             --fail \
-            --max-time 120
+            --max-time 300
+```[cite: 13]
+
+#### What this change does:
+* **Removes `pull_request`:** Stops PRs and branch updates from launching scrapers[cite: 1].
+* **Changes `--max-time 120` to `300`:** Gives the scraper 5 minutes instead of 2 minutes to complete all five municipalities (Burnaby, Vancouver, Richmond, Coquitlam, Delta), preventing `exit code 28`[cite: 2].
+* **Adds `-i`:** Prints HTTP response headers to GitHub Actions logs so you can see status codes if something fails.
+
+5. Click the green **Commit changes...** button at the top right.
+6. Choose **Commit directly to the `main` branch** and click **Commit changes**.
+
+---
+
+### Step 2: Test It Manually (30 Seconds)
+
+1. In your GitHub repo, click the **Actions** tab along the top bar.
+2. Click **IceFinder Inventory Sync** in the left sidebar[cite: 13].
+3. On the right, click **Run workflow** $\to$ click the green **Run workflow** button[cite: 13].
+4. Click into the new run[cite: 13]. With the timeout raised to 300s, it will no longer abort at 2m 2s and will complete with a green checkmark once the facilities finish syncing[cite: 2].
+
+---
+
+### Do you ever need Antigravity again?
+* **For editing configs or small fixes like this:** No, you can make GitHub web edits or terminal edits yourself anytime.
+* **For code refactoring (e.g., rewriting the TypeScript scraper so Burnaby and PerfectMind run in parallel):** Antigravity is handy for writing the code, but fixing timeouts and triggers on GitHub requires no AI at all.
