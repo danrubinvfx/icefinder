@@ -23,6 +23,10 @@ jobs:
 
 ---
 
-### Why this fixes both problems:
-* **No YAML syntax error:** Proper 2-space indentation ensures GitHub parses lines 15–20 without line 19 flagging an error[cite: 6, 13].
-* **Enables the manual button:** Because `workflow_dispatch:` is now parsed correctly on `main`[cite: 13], the **"Run workflow ▾"** button will immediately appear at **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**[cite: 2, 5].
+### Verify It Immediately
+
+1. Go back to: **[https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml](https://github.com/danrubinvfx/icefinder/actions/workflows/sync-ice.yml)**
+2. The page will reload cleanly. The **`Run workflow ▾`** button will appear in the top-right corner.
+3. Click **`Run workflow ▾`** $\to$ click the green **`Run workflow`** button. 
+
+With all explanatory text removed and the timeout raised to 300s, it will execute cleanly and finish with a solid green checkmark.
