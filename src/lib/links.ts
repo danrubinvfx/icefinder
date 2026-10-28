@@ -222,26 +222,36 @@ export function getCoquitlamFallbackUrl(
 }
 
 // ── Richmond (PerfectMind) ──────────────────────────────────────────────
+export const RICHMOND_ICE_CENTRE_CALENDAR_URL =
+  "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=8bd697eb-ee1e-4067-b6bb-be1901a7753d&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
+
+export const RICHMOND_MINORU_CALENDAR_URL =
+  "https://richmondcity.perfectmind.com/23650/Clients/BookMe4BookingPages/Classes?calendarId=6ef4a37b-91d1-432a-a92e-9828e83b4c10&widgetId=15f6af07-39c5-473e-b053-96653f77a406&embed=False";
+
 export const RICHMOND_PERFECTMIND_REGISTRATION_URL =
-  "https://richmondcity.perfectmind.com/23650/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+  RICHMOND_ICE_CENTRE_CALENDAR_URL;
 
 export const RICHMOND_ARENAS_FALLBACK_URL = "https://www.richmond.ca/arenas";
 
 export const RICHMOND_FACILITY_URLS: Record<string, string> = {
-  "richmond-ice-centre": RICHMOND_PERFECTMIND_REGISTRATION_URL,
-  minoru: RICHMOND_PERFECTMIND_REGISTRATION_URL,
+  "richmond-ice-centre": RICHMOND_ICE_CENTRE_CALENDAR_URL,
+  minoru: RICHMOND_MINORU_CALENDAR_URL,
 };
 
 export const RICHMOND_PERFECTMIND_CALENDAR_URL =
-  RICHMOND_PERFECTMIND_REGISTRATION_URL;
+  RICHMOND_ICE_CENTRE_CALENDAR_URL;
 
 export function getRichmondUrl(
   categoryOrSlug?: Category | string | null,
   facilitySlug?: string | null,
 ): string {
-  void categoryOrSlug;
-  void facilitySlug;
-  return RICHMOND_PERFECTMIND_REGISTRATION_URL;
+  if (categoryOrSlug && RICHMOND_FACILITY_URLS[categoryOrSlug]) {
+    return RICHMOND_FACILITY_URLS[categoryOrSlug];
+  }
+  if (facilitySlug && RICHMOND_FACILITY_URLS[facilitySlug]) {
+    return RICHMOND_FACILITY_URLS[facilitySlug];
+  }
+  return RICHMOND_ICE_CENTRE_CALENDAR_URL;
 }
 
 export function getRichmondFallbackUrl(
@@ -259,7 +269,7 @@ export const DELTA_PERFECTMIND_REGISTRATION_URL =
   DELTA_PERFECTMIND_ARENA_DROPIN_URL;
 
 export const DELTA_SKATING_FALLBACK_URL =
-  "https://www.delta.ca/community-culture/recreation-activities/skating-ice-sports";
+  "https://www.delta.ca/parks-recreation/drop-in-activities/skating";
 
 export const DELTA_ONLINE_REGISTRATION_URL =
   DELTA_PERFECTMIND_ARENA_DROPIN_URL;
@@ -340,7 +350,10 @@ export function resolveBookingUrl(opts: {
 
   // 3. Richmond (PerfectMind)
   if (municipality === "Richmond" || (facilitySlug && ["richmond-ice-centre", "minoru"].includes(facilitySlug))) {
-    return RICHMOND_PERFECTMIND_REGISTRATION_URL;
+    if (facilitySlug === "minoru") {
+      return RICHMOND_MINORU_CALENDAR_URL;
+    }
+    return RICHMOND_ICE_CENTRE_CALENDAR_URL;
   }
 
   // 4. Coquitlam / Poirier (PerfectMind)
