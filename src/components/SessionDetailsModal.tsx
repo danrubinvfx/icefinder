@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { track } from "@vercel/analytics";
 import {
   X,
@@ -58,6 +59,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
   if (!isOpen) return null;
 
   const isSpecial = isSpecialSession(session);
+  const isPoirier = session.facilitySlug === "poirier";
   const isWalkIn =
     session.category === "public_skate" || Boolean(session.is_walkin) || session.source === "schedule";
   const isReservable =
@@ -271,6 +273,15 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 </div>
 
                 <div className="flex flex-col gap-2 pt-1">
+                  {isPoirier && (
+                    <Link
+                      href="/schedules/coquitlam-poirier"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 cursor-pointer"
+                    >
+                      <Calendar className="size-3.5" aria-hidden />
+                      View Full Poirier Schedule Table
+                    </Link>
+                  )}
                   <a
                     href="https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"
                     target="_blank"
@@ -433,6 +444,15 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
+                  {isPoirier && (
+                    <Link
+                      href="/schedules/coquitlam-poirier"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
+                    >
+                      <Calendar className="size-3.5" aria-hidden />
+                      View Full Poirier Schedule Table
+                    </Link>
+                  )}
                   {!isWalkIn && (
                     <a
                       href={destinationUrl}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { track } from "@vercel/analytics";
 import {
   ExternalLink,
@@ -295,13 +296,33 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
             </div>
 
             {isSpecial ? (
-              <p className="text-xs font-medium text-amber-800">
-                ✨ Special schedule ice time. Sourced from facility notice. Pay at arena office.
-              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-xs font-medium text-amber-800">
+                  ✨ Special schedule ice time. Sourced from facility notice. Pay at arena office.
+                </p>
+                {s.facilitySlug === "poirier" && (
+                  <Link
+                    href="/schedules/coquitlam-poirier"
+                    className="text-[11px] font-bold text-amber-900 underline underline-offset-2 hover:text-amber-950"
+                  >
+                    View Full Poirier Schedule Table
+                  </Link>
+                )}
+              </div>
             ) : isWalkIn ? (
-              <p className="text-xs text-slate-500">
-                First-come, first-served at the front desk. No online reservation required.
-              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <p className="text-xs text-slate-500">
+                  First-come, first-served at the front desk. No online reservation required.
+                </p>
+                {s.facilitySlug === "poirier" && (
+                  <Link
+                    href="/schedules/coquitlam-poirier"
+                    className="text-[11px] font-bold text-teal-700 underline underline-offset-2 hover:text-teal-900"
+                  >
+                    View Full Poirier Schedule Table
+                  </Link>
+                )}
+              </div>
             ) : null}
           </div>
 
