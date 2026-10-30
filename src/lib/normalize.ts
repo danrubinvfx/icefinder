@@ -173,7 +173,7 @@ export function extractSessionRequirements(
   }
   if (/no coaches allowed|coaching is not permitted/i.test(combined)) {
     add("No Coaches Allowed");
-  } else if (/coaches are free of charge/i.test(combined)) {
+  } else if (/coaches are free of charge|coaches free/i.test(combined)) {
     add("Coaches Free");
   } else if (/coaches are required to pay/i.test(combined)) {
     add("Coaches Must Pay");

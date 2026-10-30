@@ -105,7 +105,13 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
           rawTitle: s.rawTitle,
         }),
         source: s.source,
-        is_walkin: s.category === "public_skate" || s.source === "schedule",
+        is_walkin:
+          s.is_walkin ??
+          (s.category === "public_skate" ||
+            s.source === "schedule" ||
+            s.source === "special_schedule" ||
+            s.source === "schedule_footer" ||
+            (s.facilitySlug === "poirier" && s.category === "figure_buyon")),
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
         external_id: s.externalId ?? null,
@@ -199,7 +205,12 @@ export async function getFeed(): Promise<FeedPayload> {
             rawTitle: r.rawTitle,
           }),
           source: r.source,
-          is_walkin: (r.category as Category) === "public_skate" || r.source === "schedule",
+          is_walkin:
+            (r.category as Category) === "public_skate" ||
+            r.source === "schedule" ||
+            r.source === "special_schedule" ||
+            r.source === "schedule_footer" ||
+            (r.facility.slug === "poirier" && r.category === "figure_buyon"),
           activityId: r.activityId ?? null,
           externalId: r.externalId,
           external_id: r.externalId,

@@ -251,3 +251,18 @@ export const FACILITY_SHORT_NAME: Record<string, string> = Object.fromEntries(
 );
 
 export const TIMEZONE = "America/Vancouver";
+
+/**
+ * Detect when a session is sourced from an offline schedule or club partner
+ */
+export function isSpecialSession(session: {
+  source?: string | null;
+  facilitySlug: string;
+  category: string;
+}): boolean {
+  return (
+    session.source === "special_schedule" ||
+    session.source === "schedule_footer" ||
+    (session.facilitySlug === "poirier" && session.category === "figure_buyon")
+  );
+}

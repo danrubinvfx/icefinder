@@ -16,7 +16,8 @@ export interface NormalizedSession {
   goaliesRegistered: number | null;
   cost: number | null;
   bookingUrl: string;
-  source: "live" | "mock" | "schedule";
+  source: "live" | "mock" | "schedule" | "special_schedule" | "schedule_footer" | string;
+  is_walkin?: boolean;
   activityId?: number | null;
   externalId: string | null;
   requirements?: string[];

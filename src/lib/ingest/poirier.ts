@@ -268,6 +268,8 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
     goalieSpots?: number;
     goaliesRegistered?: number;
     notes?: string;
+    source?: string;
+    is_walkin?: boolean;
   }) {
     const startTime = fromZonedTime(`${opts.ymd}T${opts.start}:00`, TIMEZONE);
     const endTime = fromZonedTime(`${opts.ymd}T${opts.end}:00`, TIMEZONE);
@@ -295,7 +297,8 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
       cost: opts.cost ?? null,
       bookingUrl:
         opts.category === "public_skate" ? POIRIER_PUBLIC_SKATE_BOOKING_URL : POIRIER_BOOKING_URL,
-      source: "schedule",
+      source: opts.source ?? "schedule",
+      is_walkin: opts.is_walkin ?? false,
       externalId: null,
       requirements,
       notes,
@@ -331,10 +334,49 @@ export function generatePoirierTimetable(startDate: Date, endDate: Date): Normal
     const isStatutoryBuyOnCancelled = ["2026-09-07", "2026-10-12", "2026-11-11"].includes(ymd);
     if (!isStatutoryBuyOnCancelled) {
       if (dow === 1 || dow === 3 || dow === 5) {
-        addSession({ ymd, start: "08:15", end: "09:15", rawTitle: "Figure Skating Buy-on", category: "figure_buyon", totalSpots: 20, cost: 11.0, rink: "Rink 2" });
-        addSession({ ymd, start: "13:00", end: "14:00", rawTitle: "Figure Skating Buy-on", category: "figure_buyon", totalSpots: 20, cost: 11.0, rink: "Rink 2" });
+        addSession({
+          ymd,
+          start: "08:15",
+          end: "09:15",
+          rawTitle: "Figure Skating Buy-on",
+          category: "figure_buyon",
+          totalSpots: 20,
+          cost: 9.0,
+          rink: "Poirier Ice Arena 2",
+          source: "special_schedule",
+          is_walkin: true,
+          notes:
+            "Run in partnership with Coquitlam Skate Club. Pay $9 at arena office. Coaches free. Not bookable on city portal.",
+        });
+        addSession({
+          ymd,
+          start: "13:00",
+          end: "14:00",
+          rawTitle: "Figure Skating Buy-on",
+          category: "figure_buyon",
+          totalSpots: 20,
+          cost: 9.0,
+          rink: "Poirier Ice Arena 2",
+          source: "special_schedule",
+          is_walkin: true,
+          notes:
+            "Run in partnership with Coquitlam Skate Club. Pay $9 at arena office. Coaches free. Not bookable on city portal.",
+        });
       } else if (dow === 2) {
-        addSession({ ymd, start: "08:00", end: "09:00", rawTitle: "Figure Skating Buy-on", category: "figure_buyon", totalSpots: 20, cost: 11.0, rink: "Rink 2" });
+        addSession({
+          ymd,
+          start: "08:00",
+          end: "09:00",
+          rawTitle: "Figure Skating Buy-on",
+          category: "figure_buyon",
+          totalSpots: 20,
+          cost: 9.0,
+          rink: "Poirier Ice Arena 2",
+          source: "special_schedule",
+          is_walkin: true,
+          notes:
+            "Run in partnership with Coquitlam Skate Club. Pay $9 at arena office. Coaches free. Not bookable on city portal.",
+        });
       }
     }
 
