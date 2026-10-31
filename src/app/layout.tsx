@@ -10,12 +10,17 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "sw
 export const metadata: Metadata = {
   metadataBase: new URL("https://icefinder.ca"),
   title: {
-    default: "IceFinder | Metro Vancouver Ice Times, Drop-in Hockey & Figure Skating",
+    default: "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots) | IceFinder",
     template: "%s | IceFinder",
   },
   description:
-    "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.",
+    "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly.",
   keywords: [
+    "drop in hockey richmond",
+    "burnaby stick and puck",
+    "vancouver drop in hockey",
+    "coquitlam drop in hockey",
+    "delta drop in hockey",
     "Vancouver ice times",
     "Burnaby drop in hockey",
     "Rosemary Brown ice schedule",
@@ -34,9 +39,9 @@ export const metadata: Metadata = {
   authors: [{ name: "IceFinder" }],
   creator: "IceFinder",
   openGraph: {
-    title: "IceFinder | Real-Time Metro Vancouver Ice Tracker",
+    title: "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots) | IceFinder",
     description:
-      "Live drop-in hockey, public skate, and figure skating buy-on availability across Metro Vancouver arenas.",
+      "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly.",
     url: "https://icefinder.ca",
     siteName: "IceFinder",
     locale: "en_CA",
@@ -83,7 +88,7 @@ const jsonLd = {
       url: "https://icefinder.ca",
       name: "IceFinder",
       description:
-        "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.",
+        "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly.",
       inLanguage: "en-CA",
       potentialAction: {
         "@type": "SearchAction",

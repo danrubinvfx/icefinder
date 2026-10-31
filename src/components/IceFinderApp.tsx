@@ -96,13 +96,27 @@ function Toggle({
   );
 }
 
-export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
+interface IceFinderAppProps {
+  initialFeed: FeedPayload;
+  initialMunicipality?: Municipality;
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
+export function IceFinderApp({
+  initialFeed,
+  initialMunicipality,
+  seoTitle,
+  seoDescription,
+}: IceFinderAppProps) {
   const [feed, setFeed] = useState(initialFeed);
   // `now` starts at the server render time so the first client render matches SSR exactly.
   const [now, setNow] = useState(() => new Date(initialFeed.generatedAt).getTime());
   const [refreshing, setRefreshing] = useState(false);
 
-  const [municipality, setMunicipality] = useState<Municipality>("All Metro Van");
+  const [municipality, setMunicipality] = useState<Municipality>(
+    initialMunicipality ?? "All Metro Van",
+  );
   const [dateMode, setDateMode] = useState<DateMode>("today");
   const [pickedDate, setPickedDate] = useState<string>("");
   const [category, setCategory] = useState<CategoryFilter>("all");
@@ -529,10 +543,11 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
         {/* SEO Header */}
         <header className="space-y-1">
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-            Metro Vancouver Real-Time Ice Times &amp; Drop-In Schedules
+            {seoTitle ?? "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots)"}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600">
-            Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.
+            {seoDescription ??
+              "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly."}
           </p>
         </header>
 

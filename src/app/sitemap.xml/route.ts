@@ -1,17 +1,30 @@
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const baseUrl = "https://icefinder.ca";
   const lastModified = new Date().toISOString();
+
+  const routes = [
+    { loc: "https://icefinder.ca/", priority: "1.0", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/burnaby", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/vancouver", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/richmond", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/coquitlam", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/delta", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://icefinder.ca/schedules/coquitlam-poirier", priority: "0.7", changefreq: "daily" },
+  ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}</loc>
+${routes
+  .map(
+    (r) => `  <url>
+    <loc>${r.loc}</loc>
     <lastmod>${lastModified}</lastmod>
-    <changefreq>hourly</changefreq>
-    <priority>1.0</priority>
-  </url>
+    <changefreq>${r.changefreq}</changefreq>
+    <priority>${r.priority}</priority>
+  </url>`,
+  )
+  .join("\n")}
 </urlset>`.trim();
 
   return new Response(xml, {

@@ -1,9 +1,22 @@
 import React from "react";
+import Link from "next/link";
 
 export function Footer() {
   return (
     <footer className="mt-8 border-t border-slate-200/80 pt-6 pb-4 text-center text-xs leading-relaxed text-slate-500">
       <div className="mx-auto max-w-2xl space-y-2 px-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs text-slate-600 font-medium">
+          <span className="text-slate-500">Drop-in Ice Schedules:</span>
+          <Link href="/burnaby" className="hover:text-ice-600 underline underline-offset-2">Burnaby</Link>
+          <span>·</span>
+          <Link href="/vancouver" className="hover:text-ice-600 underline underline-offset-2">Vancouver</Link>
+          <span>·</span>
+          <Link href="/richmond" className="hover:text-ice-600 underline underline-offset-2">Richmond</Link>
+          <span>·</span>
+          <Link href="/coquitlam" className="hover:text-ice-600 underline underline-offset-2">Coquitlam</Link>
+          <span>·</span>
+          <Link href="/delta" className="hover:text-ice-600 underline underline-offset-2">Delta</Link>
+        </div>
         <p className="text-slate-500">
           Schedules and spot availability are synced periodically from municipal recreation portals. Times, capacity, and holiday hours are subject to change. Please confirm directly with the host facility or city booking page prior to heading to the rink.
         </p>

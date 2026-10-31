@@ -24,10 +24,10 @@ function FeedSkeleton() {
       {/* SEO Title in Skeleton */}
       <div className="pt-4 pb-2">
         <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-          Metro Vancouver Real-Time Ice Times &amp; Drop-In Schedules
+          Metro Vancouver Ice Times &amp; Drop-In Tracker (Live Spots)
         </h1>
         <p className="mt-1 text-xs sm:text-sm text-slate-500">
-          Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.
+          Find real-time drop-in hockey, stick &amp; puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam &amp; Delta. Check live open spots and register directly.
         </p>
       </div>
 
