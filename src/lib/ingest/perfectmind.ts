@@ -20,7 +20,7 @@ import {
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
   RICHMOND_ICE_CENTRE_CALENDAR_URL,
   RICHMOND_MINORU_CALENDAR_URL,
-  SURREY_PERFECTMIND_WIDGET_URL,
+  SURREY_PERFECTMIND_SKATING_CALENDAR_URL,
   NVRC_PERFECTMIND_WIDGET_URL,
 } from "../links";
 import { fetchJson } from "./http";
@@ -301,7 +301,7 @@ export async function collectPerfectMind(
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
         : facility.municipality === "Surrey"
-        ? SURREY_PERFECTMIND_WIDGET_URL
+        ? SURREY_PERFECTMIND_SKATING_CALENDAR_URL
         : facility.municipality === "North Vancouver"
         ? NVRC_PERFECTMIND_WIDGET_URL
         : resolveBookingUrl({

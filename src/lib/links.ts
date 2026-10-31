@@ -301,14 +301,24 @@ export function getDeltaFallbackUrl(
 }
 
 // ── Surrey (PerfectMind) ────────────────────────────────────────────────
+export const SURREY_PERFECTMIND_SKATING_CALENDAR_URL =
+  "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4BookingPages/Classes?calendarId=5b599b6d-d54f-43c1-b86a-e962d9bf107b&widgetId=b4059e75-9755-401f-a7b5-d7c75361420d&embed=False";
+
+export const SURREY_PERFECTMIND_CALENDAR_URL = SURREY_PERFECTMIND_SKATING_CALENDAR_URL;
+
 export const SURREY_PERFECTMIND_WIDGET_URL =
   "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4?widgetId=b4059e75-9755-401f-a7b5-d7c75361420d";
 
-export const SURREY_PERFECTMIND_CALENDAR_URL =
-  "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4BookingPages/Classes?calendarId=5b599b6d-d54f-43c1-b86a-e962d9bf107b&widgetId=b4059e75-9755-401f-a7b5-d7c75361420d&embed=False";
+export const SURREY_FACILITIES = [
+  "north-surrey",
+  "surrey-sport-leisure",
+  "cloverdale-ice",
+  "south-surrey",
+  "newton-arena",
+];
 
 export function getSurreyUrl(): string {
-  return SURREY_PERFECTMIND_WIDGET_URL;
+  return SURREY_PERFECTMIND_SKATING_CALENDAR_URL;
 }
 
 // ── North Vancouver / NVRC (PerfectMind) ────────────────────────────────
@@ -421,12 +431,9 @@ export function resolveBookingUrl(opts: {
   // 6. Surrey (PerfectMind)
   if (
     municipality === "Surrey" ||
-    (facilitySlug &&
-      ["north-surrey", "surrey-sport-leisure", "cloverdale-ice", "south-surrey", "newton-arena"].includes(
-        facilitySlug,
-      ))
+    (facilitySlug && SURREY_FACILITIES.includes(facilitySlug))
   ) {
-    return SURREY_PERFECTMIND_WIDGET_URL;
+    return SURREY_PERFECTMIND_SKATING_CALENDAR_URL;
   }
 
   // 7. North Vancouver (NVRC PerfectMind)
