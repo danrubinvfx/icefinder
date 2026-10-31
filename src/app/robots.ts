@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://icefinder.ca/sitemap.xml",
+    sitemap: "https://www.icefinder.ca/sitemap.xml",
   };
 }

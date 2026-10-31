@@ -8,7 +8,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://icefinder.ca"),
+  metadataBase: new URL("https://www.icefinder.ca"),
   title: {
     default: "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots) | IceFinder",
     template: "%s | IceFinder",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots) | IceFinder",
     description:
       "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly.",
-    url: "https://icefinder.ca",
+    url: "https://www.icefinder.ca",
     siteName: "IceFinder",
     locale: "en_CA",
     type: "website",
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://icefinder.ca",
+    canonical: "https://www.icefinder.ca",
   },
   applicationName: "IceFinder",
   appleWebApp: {
@@ -84,24 +84,24 @@ const jsonLd = {
   "@graph": [
     {
       "@type": "WebSite",
-      "@id": "https://icefinder.ca/#website",
-      url: "https://icefinder.ca",
+      "@id": "https://www.icefinder.ca/#website",
+      url: "https://www.icefinder.ca",
       name: "IceFinder",
       description:
         "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly.",
       inLanguage: "en-CA",
       potentialAction: {
         "@type": "SearchAction",
-        target: "https://icefinder.ca/?q={search_term_string}",
+        target: "https://www.icefinder.ca/?q={search_term_string}",
         "query-input": "required name=search_term_string",
       },
     },
     ...FACILITIES.map((facility) => ({
       "@type": "SportsActivityLocation",
-      "@id": `https://icefinder.ca/#${facility.slug}`,
+      "@id": `https://www.icefinder.ca/#${facility.slug}`,
       name: facility.name,
       alternateName: facility.shortName,
-      url: "https://icefinder.ca",
+      url: "https://www.icefinder.ca",
       address: {
         "@type": "PostalAddress",
         streetAddress: facility.address.split(",")[0].trim(),

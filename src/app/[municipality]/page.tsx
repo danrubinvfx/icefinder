@@ -5,136 +5,118 @@ import { CATEGORY_LABELS, matchesMunicipalityFilter, type Municipality } from "@
 import { getFeed } from "@/lib/queries";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
 
-interface CityConfig {
-  slug: string;
-  name: string;
-  tab: Municipality;
+export const dynamic = "force-dynamic";
+export const dynamicParams = true;
+
+const VALID_MUNICIPALITIES: Record<string, string> = {
+  burnaby: "Burnaby",
+  vancouver: "Vancouver",
+  richmond: "Richmond",
+  coquitlam: "Coquitlam",
+  delta: "Delta",
+};
+
+interface CityMeta {
   title: string;
   description: string;
-  facilities: string[];
+  tab: Municipality;
 }
 
-const CITY_CONFIGS: Record<string, CityConfig> = {
+const CITY_DETAILS: Record<string, CityMeta> = {
   burnaby: {
-    slug: "burnaby",
-    name: "Burnaby",
-    tab: "Burnaby",
     title: "Burnaby Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
       "Real-time drop-in ice schedules for Rosemary Brown, Kensington, Bill Copeland, and Scotia Barn.",
-    facilities: [
-      "Rosemary Brown Recreation Centre",
-      "Kensington Complex",
-      "Bill Copeland Sports Centre",
-      "Scotia Barn (Canlan Sports Burnaby)",
-    ],
+    tab: "Burnaby",
   },
   vancouver: {
-    slug: "vancouver",
-    name: "Vancouver",
-    tab: "Vancouver",
     title: "Vancouver Ice Times & Drop-In Hockey Schedule | IceFinder",
     description:
       "Live drop-in hockey, stick & puck, and public skating schedules for Britannia, Hillcrest, Kitsilano, Trout Lake, Sunset, and Killarney rinks.",
-    facilities: [
-      "Britannia Community Centre Rink",
-      "Hillcrest Rink",
-      "Kitsilano Community Centre Rink",
-      "Trout Lake Rink",
-      "Sunset Community Centre Rink",
-      "Killarney Rink",
-    ],
+    tab: "Vancouver",
   },
   richmond: {
-    slug: "richmond",
-    name: "Richmond",
-    tab: "Richmond",
     title: "Richmond Ice Times & Drop-In Hockey Schedule | IceFinder",
     description:
       "Live drop-in hockey, stick & puck, and public skating schedules for Richmond Ice Centre and Minoru Arenas. Updated every 30 minutes.",
-    facilities: ["Richmond Ice Centre", "Minoru Arenas"],
+    tab: "Richmond",
   },
   coquitlam: {
-    slug: "coquitlam",
-    name: "Coquitlam",
-    tab: "Tri-Cities",
     title: "Coquitlam Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
       "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex in Coquitlam.",
-    facilities: ["Poirier Sport & Leisure Complex"],
+    tab: "Tri-Cities",
   },
   delta: {
-    slug: "delta",
-    name: "Delta",
-    tab: "Delta",
     title: "Delta Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
       "Live drop-in hockey, stick & puck, and public skating schedules for Sungod, North Delta, South Delta, and Tilbury Ice.",
-    facilities: [
-      "North Delta Recreation Centre",
-      "Sungod Recreation Centre",
-      "South Delta Recreation Centre",
-      "Tilbury Ice",
-    ],
+    tab: "Delta",
   },
 };
 
-export const dynamicParams = false;
-export const revalidate = 60;
-
 export function generateStaticParams() {
-  return [
-    { municipality: "burnaby" },
-    { municipality: "vancouver" },
-    { municipality: "richmond" },
-    { municipality: "coquitlam" },
-    { municipality: "delta" },
-  ];
+  return Object.keys(VALID_MUNICIPALITIES).map((slug) => ({
+    municipality: slug,
+  }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
+interface RouteProps {
   params: Promise<{ municipality: string }>;
-}): Promise<Metadata> {
-  const { municipality: slug } = await params;
-  const city = CITY_CONFIGS[slug.toLowerCase()];
-  if (!city) return {};
+}
+
+export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
+  const { municipality } = await params;
+  const slug = municipality?.toLowerCase();
+  const cityName = VALID_MUNICIPALITIES[slug];
+
+  if (!cityName) return {};
+
+  const details = CITY_DETAILS[slug];
+  const title = details?.title ?? `${cityName} Ice Times & Drop-In Hockey Schedule | IceFinder`;
+  const description =
+    details?.description ??
+    `Live drop-in hockey, stick & puck, and skating schedules in ${cityName}.`;
 
   return {
     title: {
-      absolute: city.title,
+      absolute: title,
     },
-    description: city.description,
+    description,
     alternates: {
-      canonical: `https://icefinder.ca/${city.slug}`,
+      canonical: `https://www.icefinder.ca/${slug}`,
     },
     openGraph: {
-      title: city.title,
-      description: city.description,
-      url: `https://icefinder.ca/${city.slug}`,
+      title,
+      description,
+      url: `https://www.icefinder.ca/${slug}`,
       siteName: "IceFinder",
       locale: "en_CA",
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: city.title,
-      description: city.description,
+      title,
+      description,
     },
   };
 }
 
-export default async function MunicipalityPage({
-  params,
-}: {
-  params: Promise<{ municipality: string }>;
-}) {
-  const { municipality: slug } = await params;
-  const city = CITY_CONFIGS[slug.toLowerCase()];
-  if (!city) {
+export default async function MunicipalityPage({ params }: RouteProps) {
+  const { municipality } = await params;
+  const slug = municipality?.toLowerCase();
+
+  if (!VALID_MUNICIPALITIES[slug]) {
     notFound();
   }
+
+  const cityName = VALID_MUNICIPALITIES[slug];
+  const details = CITY_DETAILS[slug];
+  const title = details?.title ?? `${cityName} Ice Times & Drop-In Hockey Schedule | IceFinder`;
+  const description =
+    details?.description ??
+    `Live drop-in hockey, stick & puck, and skating schedules in ${cityName}.`;
+  const tab = details?.tab ?? (cityName as Municipality);
 
   const feed = await getFeed();
 
@@ -145,8 +127,8 @@ export default async function MunicipalityPage({
     const startMs = new Date(s.startTime).getTime();
     const endMs = new Date(s.endTime).getTime();
     const matchesCity =
-      s.municipality.toLowerCase() === city.slug.toLowerCase() ||
-      matchesMunicipalityFilter(s.municipality, city.tab);
+      s.municipality.toLowerCase() === slug ||
+      matchesMunicipalityFilter(s.municipality, tab);
     return matchesCity && endMs > now && startMs <= in48Hours;
   });
 
@@ -155,15 +137,15 @@ export default async function MunicipalityPage({
     "@graph": [
       {
         "@type": "WebPage",
-        "@id": `https://icefinder.ca/${city.slug}#webpage`,
-        url: `https://icefinder.ca/${city.slug}`,
-        name: city.title,
-        description: city.description,
+        "@id": `https://www.icefinder.ca/${slug}#webpage`,
+        url: `https://www.icefinder.ca/${slug}`,
+        name: title,
+        description,
         isPartOf: {
           "@type": "WebSite",
-          "@id": "https://icefinder.ca/#website",
+          "@id": "https://www.icefinder.ca/#website",
           name: "IceFinder",
-          url: "https://icefinder.ca",
+          url: "https://www.icefinder.ca",
         },
       },
       {
@@ -173,25 +155,25 @@ export default async function MunicipalityPage({
             "@type": "ListItem",
             position: 1,
             name: "Home",
-            item: "https://icefinder.ca",
+            item: "https://www.icefinder.ca",
           },
           {
             "@type": "ListItem",
             position: 2,
-            name: city.name,
-            item: `https://icefinder.ca/${city.slug}`,
+            name: cityName,
+            item: `https://www.icefinder.ca/${slug}`,
           },
         ],
       },
       {
         "@type": "ItemList",
-        name: `${city.name} Upcoming Drop-In Ice Schedule`,
+        name: `${cityName} Upcoming Drop-In Ice Schedule`,
         itemListElement: upcomingSessions.slice(0, 25).map((session, index) => ({
           "@type": "ListItem",
           position: index + 1,
           name: session.rawTitle,
           description: `${session.facilityName} - ${CATEGORY_LABELS[session.category] ?? session.category}`,
-          url: session.bookingUrl || `https://icefinder.ca/${city.slug}`,
+          url: session.bookingUrl || `https://www.icefinder.ca/${slug}`,
         })),
       },
     ],
@@ -207,17 +189,17 @@ export default async function MunicipalityPage({
       {/* Accessible SSR list for search engine crawlers (Googlebot) & screen readers */}
       <section
         className="sr-only"
-        aria-label={`Upcoming ${city.name} Ice Sessions and Drop-In Schedule`}
+        aria-label={`Upcoming ${cityName} Ice Sessions and Drop-In Schedule`}
       >
-        <h2>{city.title}</h2>
-        <p>{city.description}</p>
+        <h2>{title}</h2>
+        <p>{description}</p>
         <p>
           Upcoming drop-in hockey, stick &amp; puck, figure skating buy-ons, and public skating
-          sessions across {city.name} arenas in the next 48 hours:
+          sessions across {cityName} arenas in the next 48 hours:
         </p>
         {upcomingSessions.length === 0 ? (
           <p>
-            No drop-in sessions currently scheduled in {city.name} for the next 48 hours. Live
+            No drop-in sessions currently scheduled in {cityName} for the next 48 hours. Live
             schedules update automatically as municipal recreation centres release open ice.
           </p>
         ) : (
@@ -265,9 +247,9 @@ export default async function MunicipalityPage({
       {/* Interactive live app pre-filtered for this municipality */}
       <IceFinderApp
         initialFeed={feed}
-        initialMunicipality={city.tab}
-        seoTitle={city.title.replace(" | IceFinder", "")}
-        seoDescription={city.description}
+        initialMunicipality={tab}
+        seoTitle={title.replace(" | IceFinder", "")}
+        seoDescription={description}
       />
     </>
   );

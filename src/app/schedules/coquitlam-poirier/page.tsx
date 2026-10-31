@@ -18,13 +18,13 @@ export const metadata: Metadata = {
   description:
     "Complete Poirier Sport & Leisure Complex Fall arena drop-in timetable for stick & puck, adult hockey, toonie skates, and figure skating buy-ons in Coquitlam, BC.",
   alternates: {
-    canonical: "https://icefinder.ca/schedules/coquitlam-poirier",
+    canonical: "https://www.icefinder.ca/schedules/coquitlam-poirier",
   },
   openGraph: {
     title: "Poirier Sport & Leisure Complex Arena Schedule | IceFinder",
     description:
       "Fall arena drop-in schedule for Poirier Sport & Leisure Complex in Coquitlam, BC. View stick & puck, adult hockey, public skate, and figure skating timetable.",
-    url: "https://icefinder.ca/schedules/coquitlam-poirier",
+    url: "https://www.icefinder.ca/schedules/coquitlam-poirier",
     siteName: "IceFinder",
     locale: "en_CA",
     type: "article",
