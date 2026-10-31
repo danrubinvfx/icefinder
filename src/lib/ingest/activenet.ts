@@ -73,9 +73,9 @@ function getActiveNetEndpoints(municipality: string): {
 } {
   if (municipality === "West Vancouver") {
     return {
-      primaryUrl: "https://anc.ca.apm.activecommunities.com/westvanrec/rest/activities/list?locale=en-US",
-      fallbackUrl: "https://anc.ca.apm.activecommunities.com/westvancouver/rest/activities/list?locale=en-US",
-      referer: "https://anc.ca.apm.activecommunities.com/westvanrec/activity/search",
+      primaryUrl: "https://anc.ca.apm.activecommunities.com/westvancouver/rest/activities/list?locale=en-US",
+      fallbackUrl: "https://anc.ca.apm.activecommunities.com/westvanrec/rest/activities/list?locale=en-US",
+      referer: "https://anc.ca.apm.activecommunities.com/westvancouver/activity/search",
       tenant: "westvancouver",
     };
   }

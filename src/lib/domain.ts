@@ -31,11 +31,10 @@ export const MUNICIPALITIES = [
   "Burnaby",
   "Vancouver",
   "North Shore",
-  "Richmond",
-  "Tri-Cities",
-  "Surrey",
-  "Delta",
   "New West",
+  "Richmond",
+  "Coquitlam",
+  "Delta",
 ] as const;
 
 export type Municipality = (typeof MUNICIPALITIES)[number];
@@ -49,29 +48,29 @@ export function matchesMunicipalityFilter(
   if (filter === "North Shore") {
     return itemMunicipality === "North Vancouver" || itemMunicipality === "West Vancouver";
   }
-  if (filter === "Tri-Cities") {
+  if (filter === "New West") {
+    return itemMunicipality === "New Westminster" || itemMunicipality === "New West";
+  }
+  if (filter === "Coquitlam") {
     return (
       itemMunicipality === "Coquitlam" ||
       itemMunicipality === "Port Coquitlam" ||
       itemMunicipality === "Port Moody"
     );
   }
-  if (filter === "New West") {
-    return itemMunicipality === "New Westminster" || itemMunicipality === "New West";
-  }
   return itemMunicipality === filter;
 }
 
 export function municipalityToTab(municipality: string): Municipality {
   if (municipality === "North Vancouver" || municipality === "West Vancouver") return "North Shore";
+  if (municipality === "New Westminster") return "New West";
   if (
     municipality === "Coquitlam" ||
     municipality === "Port Coquitlam" ||
     municipality === "Port Moody"
   ) {
-    return "Tri-Cities";
+    return "Coquitlam";
   }
-  if (municipality === "New Westminster") return "New West";
   return municipality as Municipality;
 }
 
@@ -86,6 +85,7 @@ export interface FacilitySeed {
   lat: number;
   lng: number;
   bookingPlatform: BookingPlatform;
+  sheets?: number;
   /** Exact `site` or location string returned by ActiveNet (activenet only). */
   activenetSite?: string;
   /** DaySmart facility id (canlan only). */
@@ -345,6 +345,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.3308,
     lng: -123.0336,
     bookingPlatform: "perfectmind",
+    sheets: 1,
   },
   {
     slug: "harry-jerome",
@@ -355,6 +356,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.3303,
     lng: -123.0674,
     bookingPlatform: "perfectmind",
+    sheets: 1,
   },
 
   // ── West Vancouver (ActiveNet) ──────────────────────────────────────────
@@ -367,6 +369,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.3364,
     lng: -123.1706,
     bookingPlatform: "activenet",
+    sheets: 1,
     activenetSite: "Ice Arena",
   },
 
@@ -380,6 +383,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.2132,
     lng: -122.9317,
     bookingPlatform: "activenet",
+    sheets: 1,
     activenetSite: "Moody Park Arena",
   },
 ];

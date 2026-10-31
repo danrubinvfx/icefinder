@@ -19,6 +19,7 @@ model Facility {
   lat             Float
   lng             Float
   bookingPlatform String       @map("booking_platform") // 'activenet' | 'canlan'
+  sheets          Int          @default(1)
   sessions        IceSession[]
   createdAt       DateTime     @default(now()) @map("created_at")
 

@@ -14,6 +14,7 @@ async function main() {
         lat: f.lat,
         lng: f.lng,
         bookingPlatform: f.bookingPlatform,
+        sheets: f.sheets ?? 1,
       },
       create: {
         slug: f.slug,
@@ -23,6 +24,7 @@ async function main() {
         lat: f.lat,
         lng: f.lng,
         bookingPlatform: f.bookingPlatform,
+        sheets: f.sheets ?? 1,
       },
     });
   }

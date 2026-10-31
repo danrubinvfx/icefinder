@@ -641,7 +641,7 @@ export function IceFinderApp({
               Metro Vancouver Arenas &amp; Drop-In Facilities
             </h2>
             <p className="text-xs text-slate-500">
-              Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster.
+              Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, North Shore, New West, Richmond, Coquitlam, and Delta.
             </p>
           </div>
 

@@ -236,7 +236,7 @@ export async function collectPerfectMind(
         "https://nvrc.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a";
       await sleep(POLITE_FACILITY_COOLDOWN_MS);
       const allNV = await getPerfectMindClassesCached(url, calendarId, log, "NVRC All Arenas");
-      classes = allNV.filter((c) => matchesNVFacility(c.Location ?? "", facility.slug));
+      classes = allNV.filter((c) => matchesNVFacility(`${c.Location ?? ""} ${c.EventName ?? ""}`, facility.slug));
     }
   } catch (err) {
     log.warn(`  perfectmind: sweep error for ${facility.slug} (${(err as Error).message})`);

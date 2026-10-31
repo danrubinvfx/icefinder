@@ -310,7 +310,9 @@ export function getSurreyUrl(): string {
 
 // ── North Vancouver / NVRC (PerfectMind) ────────────────────────────────
 export const NVRC_PERFECTMIND_WIDGET_URL =
-  "https://nvrc.perfectmind.com/23734/Clients/BookMe4?widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a";
+  "https://nvrc.perfectmind.com/23734/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+
+export const NVRC_SKATING_FALLBACK_URL = "https://www.nvrc.ca/skating";
 
 export const NVRC_PERFECTMIND_CALENDAR_URL =
   "https://nvrc.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?calendarId=9290cb7e-d450-4972-b327-b89aa12b2a69&widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a&embed=False";

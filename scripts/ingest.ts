@@ -21,6 +21,8 @@ import {
   RICHMOND_MINORU_CALENDAR_URL,
   SURREY_PERFECTMIND_CALENDAR_URL,
   NVRC_PERFECTMIND_WIDGET_URL,
+  getWestVancouverUrl,
+  getNewWestminsterUrl,
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
@@ -54,6 +56,7 @@ async function seedAllFacilities(prismaClient: PrismaClient) {
           lat: f.lat,
           lng: f.lng,
           bookingPlatform: f.bookingPlatform,
+          sheets: f.sheets ?? 1,
         },
         create: {
           slug: f.slug,
@@ -63,6 +66,7 @@ async function seedAllFacilities(prismaClient: PrismaClient) {
           lat: f.lat,
           lng: f.lng,
           bookingPlatform: f.bookingPlatform,
+          sheets: f.sheets ?? 1,
         },
       });
     } catch (err) {
@@ -112,6 +116,10 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
         ? SURREY_PERFECTMIND_CALENDAR_URL
         : s.facility.municipality === "North Vancouver"
         ? NVRC_PERFECTMIND_WIDGET_URL
+        : s.facility.municipality === "West Vancouver" || s.facility.slug === "west-vancouver-arena"
+        ? getWestVancouverUrl(s.activityId)
+        : s.facility.municipality === "New Westminster" || s.facility.slug === "moody-park"
+        ? getNewWestminsterUrl(s.activityId)
         : resolveBookingUrl({
             bookingUrl: s.bookingUrl,
             category: s.category as Category,

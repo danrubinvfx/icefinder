@@ -155,6 +155,7 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
           lat: facility.lat,
           lng: facility.lng,
           bookingPlatform: facility.bookingPlatform,
+          sheets: facility.sheets ?? 1,
         },
         create: {
           slug: facility.slug,
@@ -164,6 +165,7 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
           lat: facility.lat,
           lng: facility.lng,
           bookingPlatform: facility.bookingPlatform,
+          sheets: facility.sheets ?? 1,
         },
       });
 

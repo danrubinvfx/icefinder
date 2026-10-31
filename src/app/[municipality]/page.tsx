@@ -11,6 +11,8 @@ export const dynamicParams = true;
 const VALID_MUNICIPALITIES: Record<string, string> = {
   burnaby: "Burnaby",
   vancouver: "Vancouver",
+  "north-shore": "North Shore",
+  "new-west": "New West",
   richmond: "Richmond",
   coquitlam: "Coquitlam",
   delta: "Delta",
@@ -35,6 +37,18 @@ const CITY_DETAILS: Record<string, CityMeta> = {
       "Live drop-in hockey, stick & puck, and public skating schedules for Britannia, Hillcrest, Kitsilano, Trout Lake, Sunset, and Killarney rinks.",
     tab: "Vancouver",
   },
+  "north-shore": {
+    title: "North Shore Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    description:
+      "Real-time drop-in ice schedules for Karen Magnussen, Harry Jerome, and West Vancouver Ice Arena.",
+    tab: "North Shore",
+  },
+  "new-west": {
+    title: "New Westminster Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    description:
+      "Real-time drop-in ice schedules for Moody Park Arena in New Westminster.",
+    tab: "New West",
+  },
   richmond: {
     title: "Richmond Ice Times & Drop-In Hockey Schedule | IceFinder",
     description:
@@ -45,7 +59,7 @@ const CITY_DETAILS: Record<string, CityMeta> = {
     title: "Coquitlam Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
       "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex in Coquitlam.",
-    tab: "Tri-Cities",
+    tab: "Coquitlam",
   },
   delta: {
     title: "Delta Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
