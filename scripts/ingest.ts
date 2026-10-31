@@ -17,7 +17,8 @@ import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
-  RICHMOND_PERFECTMIND_REGISTRATION_URL,
+  RICHMOND_ICE_CENTRE_CALENDAR_URL,
+  RICHMOND_MINORU_CALENDAR_URL,
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
@@ -86,9 +87,21 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
       continue;
     }
 
+    // Purge stale Saturday/7am Minoru figure skating sessions
+    if (
+      s.facility.slug === "minoru" &&
+      s.category === "figure_buyon" &&
+      (toZonedTime(s.startTime, TIMEZONE).getDay() === 6 || toZonedTime(s.startTime, TIMEZONE).getHours() === 7)
+    ) {
+      await prismaClient.iceSession.delete({ where: { id: s.id } });
+      continue;
+    }
+
     const cleanUrl =
-      s.facility.municipality === "Richmond" || ["richmond-ice-centre", "minoru"].includes(s.facility.slug)
-        ? RICHMOND_PERFECTMIND_REGISTRATION_URL
+      s.facility.slug === "minoru"
+        ? RICHMOND_MINORU_CALENDAR_URL
+        : s.facility.municipality === "Richmond" || s.facility.slug === "richmond-ice-centre"
+        ? RICHMOND_ICE_CENTRE_CALENDAR_URL
         : s.facility.municipality === "Coquitlam" || s.facility.slug === "poirier"
         ? (s.category === "public_skate"
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL

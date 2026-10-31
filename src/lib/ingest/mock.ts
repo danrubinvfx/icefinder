@@ -93,7 +93,7 @@ const MOCK_TEMPLATES: Record<string, Template[]> = {
   ],
   minoru: [
     { title: "Adult Stick and Puck", days: [2, 4], start: "12:00", minutes: 90, capacity: 20, rink: "Silver Rink", cost: 7.9 },
-    { title: "Figure Skating Buy-on", days: [1, 3, 6], start: "07:00", minutes: 75, capacity: 18, rink: "Stadium Rink", cost: 10.5 },
+    { title: "REGISTERED VISIT - FIGURE SKATE - ALL AGES", days: [2], start: "12:00", minutes: 75, capacity: 18, rink: "Stadium Rink", cost: 10.5 },
   ],
 
   // ── Delta ──
