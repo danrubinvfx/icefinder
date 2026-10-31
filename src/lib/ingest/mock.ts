@@ -160,6 +160,23 @@ const MOCK_TEMPLATES: Record<string, Template[]> = {
     { title: "Adult Drop-in Hockey", days: [1, 3, 5], start: "21:45", minutes: 75, capacity: 22, cost: 8.0, goalie: { capacity: 2 } },
     { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 6.5 },
   ],
+
+  // ── Planet Ice ──
+  "planet-ice-coquitlam": [
+    { title: "Stick & Puck (All Ages)", days: [1, 3, 5], start: "11:00", minutes: 90, capacity: 20, rink: "Rink 1", cost: 12.0 },
+    { title: "Adult Drop-in Hockey 19+", days: [2, 4], start: "22:00", minutes: 75, capacity: 22, rink: "Rink 2", cost: 15.0, goalie: { capacity: 2 } },
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+  ],
+  "planet-ice-delta": [
+    { title: "Stick & Puck (All Ages)", days: [1, 3, 5], start: "11:30", minutes: 90, capacity: 20, rink: "Rink 1", cost: 12.0 },
+    { title: "Adult Drop-in Hockey 19+", days: [2, 4, 0], start: "21:45", minutes: 75, capacity: 22, rink: "Rink 3", cost: 15.0, goalie: { capacity: 2 } },
+    { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+  ],
+  "planet-ice-maple-ridge": [
+    { title: "Stick & Puck", days: [1, 3], start: "12:00", minutes: 75, capacity: 20, rink: "Rink 1", cost: 12.0 },
+    { title: "Adult Drop-in Hockey", days: [2, 4], start: "22:00", minutes: 75, capacity: 22, rink: "Rink 1", cost: 15.0, goalie: { capacity: 2 } },
+    { title: "Public Skate", days: [5, 6, 0], start: "13:30", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+  ],
 };
 
 const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
@@ -280,6 +297,18 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
   "moody-park": [
     { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 200, cost: 6.5 },
     { title: "Family Skate", days: [4], start: "18:30", minutes: 90, capacity: 200, cost: 6.5 },
+  ],
+
+  // ── Planet Ice ──
+  "planet-ice-coquitlam": [
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+  ],
+  "planet-ice-delta": [
+    { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+  ],
+  "planet-ice-maple-ridge": [
+    { title: "Public Skate", days: [5], start: "20:30", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 150, rink: "Rink 1", cost: 8.5 },
   ],
 };
 

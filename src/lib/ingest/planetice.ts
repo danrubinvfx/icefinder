@@ -14,7 +14,7 @@ import {
   sanitizeSessionNotes,
   sessionKey,
 } from "../normalize";
-import { getPlanetIceEventUrl, PLANET_ICE_HOME_URL } from "../links";
+import { getPlanetIceEventUrl } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 

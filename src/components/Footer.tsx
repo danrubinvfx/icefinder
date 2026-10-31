@@ -16,12 +16,14 @@ export function Footer() {
           <Link href="/coquitlam" className="hover:text-ice-600 underline underline-offset-2">Coquitlam</Link>
           <span>·</span>
           <Link href="/delta" className="hover:text-ice-600 underline underline-offset-2">Delta</Link>
+          <span>·</span>
+          <Link href="/maple-ridge" className="hover:text-ice-600 underline underline-offset-2">Maple Ridge</Link>
         </div>
         <p className="text-slate-500">
           Schedules and spot availability are synced periodically from municipal recreation portals. Times, capacity, and holiday hours are subject to change. Please confirm directly with the host facility or city booking page prior to heading to the rink.
         </p>
         <p className="text-[11px] font-medium text-slate-400">
-          Data from Burnaby, Vancouver, Richmond, Coquitlam, Delta &amp; Canlan Sports · icefinder.ca · Built for Metro Vancouver skaters
+          Data from Metro Vancouver Municipalities, Canlan Sports &amp; Planet Ice · icefinder.ca · Built for Metro Vancouver skaters
         </p>
       </div>
     </footer>

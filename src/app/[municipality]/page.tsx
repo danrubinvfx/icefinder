@@ -17,6 +17,7 @@ const VALID_MUNICIPALITIES: Record<string, string> = {
   coquitlam: "Coquitlam",
   delta: "Delta",
   surrey: "Surrey",
+  "maple-ridge": "Maple Ridge",
 };
 
 interface CityMeta {
@@ -59,13 +60,13 @@ const CITY_DETAILS: Record<string, CityMeta> = {
   coquitlam: {
     title: "Coquitlam Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
-      "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex in Coquitlam.",
+      "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex and Planet Ice in Coquitlam.",
     tab: "Coquitlam",
   },
   delta: {
     title: "Delta Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
-      "Live drop-in hockey, stick & puck, and public skating schedules for Sungod, North Delta, South Delta, and Tilbury Ice.",
+      "Live drop-in hockey, stick & puck, and public skating schedules for Sungod, North Delta, South Delta, Tilbury Ice, and Planet Ice Delta.",
     tab: "Delta",
   },
   surrey: {
@@ -73,6 +74,12 @@ const CITY_DETAILS: Record<string, CityMeta> = {
     description:
       "Real-time drop-in ice schedules for North Surrey, Surrey Sport & Leisure, Cloverdale, South Surrey, and Newton Arena.",
     tab: "Surrey",
+  },
+  "maple-ridge": {
+    title: "Maple Ridge Ice Times & Drop-In Hockey Schedule | IceFinder",
+    description:
+      "Real-time drop-in hockey, stick & puck, and public skating schedules for Planet Ice Maple Ridge.",
+    tab: "Maple Ridge",
   },
 };
 

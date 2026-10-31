@@ -12,6 +12,7 @@ import { fetchBurnabySessions } from "./burnaby";
 import { collectVancouver, resetVancouverCache } from "./vancouver";
 import { collectPerfectMind, resetPerfectMindCache } from "./perfectmind";
 import { collectCanlan } from "./canlan";
+import { collectPlanetIce } from "./planetice";
 import { mockSessionsFor, publicSkateScheduleFor } from "./mock";
 import { fetchPoirierSessions, poirierSessionKey } from "./poirier";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -57,6 +58,7 @@ function collectorFor(f: FacilitySeed) {
     };
   }
   if (f.bookingPlatform === "canlan") return collectCanlan;
+  if (f.bookingPlatform === "daysmart") return collectPlanetIce;
   if (f.bookingPlatform === "perfectmind") return collectPerfectMind;
   if (f.municipality === "Vancouver") return collectVancouver;
   if (f.municipality === "Burnaby") return fetchBurnabySessions;

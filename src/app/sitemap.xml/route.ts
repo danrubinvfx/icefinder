@@ -10,6 +10,7 @@ export async function GET() {
     { loc: "https://www.icefinder.ca/richmond", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/coquitlam", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/delta", priority: "0.8", changefreq: "hourly" },
+    { loc: "https://www.icefinder.ca/maple-ridge", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/schedules/coquitlam-poirier", priority: "0.7", changefreq: "daily" },
   ];
 
