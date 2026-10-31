@@ -104,7 +104,18 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
     }
 
     const cleanUrl =
-      s.facility.slug === "minoru"
+      s.facility.bookingPlatform === "daysmart" || s.facility.slug.startsWith("planet-ice-")
+        ? resolveBookingUrl({
+            bookingUrl: s.bookingUrl,
+            category: s.category as Category,
+            bookingPlatform: s.facility.bookingPlatform,
+            activityId: s.activityId,
+            externalId: s.externalId,
+            facilitySlug: s.facility.slug,
+            municipality: s.facility.municipality,
+            source: s.source,
+          })
+        : s.facility.slug === "minoru"
         ? RICHMOND_MINORU_CALENDAR_URL
         : s.facility.municipality === "Richmond" || s.facility.slug === "richmond-ice-centre"
         ? RICHMOND_ICE_CENTRE_CALENDAR_URL

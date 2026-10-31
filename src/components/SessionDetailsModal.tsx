@@ -20,6 +20,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { CATEGORY_SHORT, FACILITIES, isSpecialSession } from "@/lib/domain";
+import { FACILITY_CONTACTS } from "@/lib/facilities";
 import { extractSessionRequirements, sanitizeSessionNotes } from "@/lib/normalize";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
 import { resolveBookingUrl } from "@/lib/links";
@@ -59,7 +60,6 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
   if (!isOpen) return null;
 
   const isSpecial = isSpecialSession(session);
-  const isPoirier = session.facilitySlug === "poirier";
   const isWalkIn =
     session.category === "public_skate" || Boolean(session.is_walkin) || session.source === "schedule";
   const isReservable =
@@ -69,6 +69,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
       session.category === "figure_buyon");
   const full = isReservable && session.source !== "schedule" && session.openSpots <= 0;
 
+  const facility = FACILITY_CONTACTS[session.facilitySlug];
   const facilityMeta = FACILITY_BY_SLUG.get(session.facilitySlug);
   const facilityAddress = facilityMeta?.address ?? `${session.facilityName}, ${session.municipality}, BC`;
   const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
@@ -273,7 +274,16 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 </div>
 
                 <div className="flex flex-col gap-2 pt-1">
-                  {isPoirier && (
+                  {facility?.phone && (
+                    <a
+                      href={`tel:${facility.phone.replace(/\D/g, "")}`}
+                      className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition"
+                    >
+                      <span>📞</span>
+                      <span>Call Front Desk {facility.phone}</span>
+                    </a>
+                  )}
+                  {facility?.slug === "poirier" ? (
                     <Link
                       href="/schedules/coquitlam-poirier"
                       className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 cursor-pointer"
@@ -281,17 +291,18 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                       <Calendar className="size-3.5" aria-hidden />
                       View Full Poirier Schedule Table
                     </Link>
-                  )}
-                  <a
-                    href="https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleOutboundClick}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
-                  >
-                    View PSLC Facility Page
-                    <ExternalLink className="size-3 text-slate-500" aria-hidden />
-                  </a>
+                  ) : facility?.scheduleUrl ? (
+                    <a
+                      href={facility.scheduleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={handleOutboundClick}
+                      className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
+                    >
+                      View Facility Schedule
+                      <ExternalLink className="size-3 text-slate-500" aria-hidden />
+                    </a>
+                  ) : null}
 
                   <a
                     href={googleMapsUrl}
@@ -308,16 +319,26 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
             </div>
 
             <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-5 py-3">
-              <a
-                href="https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleOutboundClick}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
-              >
-                Facility website
-                <ExternalLink className="size-3" aria-hidden />
-              </a>
+              {facility?.slug === "poirier" ? (
+                <Link
+                  href="/schedules/coquitlam-poirier"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
+                >
+                  Facility schedule
+                  <ExternalLink className="size-3" aria-hidden />
+                </Link>
+              ) : facility?.scheduleUrl ? (
+                <a
+                  href={facility.scheduleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleOutboundClick}
+                  className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-800 transition"
+                >
+                  Facility schedule
+                  <ExternalLink className="size-3" aria-hidden />
+                </a>
+              ) : null}
               <button
                 type="button"
                 onClick={onClose}
@@ -423,14 +444,14 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 </div>
               )}
 
-              {isWalkIn && (
+              {(isWalkIn || session.is_walkin === true || session.category === "public_skate") && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs leading-relaxed text-amber-950">
                   <p className="font-bold text-amber-900">Walk-In Admission Only</p>
                   <p className="mt-1 font-medium text-amber-900">
                     Admission is managed at the arena front desk. Always verify facility status before heading over.
                   </p>
                   <p className="mt-1 text-amber-800/90">
-                    First-come, first-served at the facility front desk. The City of {session.municipality || "Vancouver"} does not take online pre-registration for general public skating sessions.
+                    First-come, first-served at the front desk. Call the arena front desk to confirm holiday hours, capacity, or tournament pre-emptions.
                   </p>
                 </div>
               )}
@@ -444,14 +465,14 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  {isPoirier && (
-                    <Link
-                      href="/schedules/coquitlam-poirier"
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
+                  {facility?.phone && (
+                    <a
+                      href={`tel:${facility.phone.replace(/\D/g, "")}`}
+                      className="flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-sm transition"
                     >
-                      <Calendar className="size-3.5" aria-hidden />
-                      View Full Poirier Schedule Table
-                    </Link>
+                      <span>📞</span>
+                      <span>Call Front Desk {facility.phone}</span>
+                    </a>
                   )}
                   {!isWalkIn && (
                     <a
@@ -465,6 +486,27 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                       <ExternalLink className="size-3.5" aria-hidden />
                     </a>
                   )}
+                  {facility?.slug === "poirier" ? (
+                    <Link
+                      href="/schedules/coquitlam-poirier"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 text-xs font-bold text-white shadow-xs transition hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
+                    >
+                      <Calendar className="size-3.5" aria-hidden />
+                      View Full Poirier Schedule Table
+                    </Link>
+                  ) : facility?.scheduleUrl ? (
+                    <a
+                      href={facility.scheduleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={handleOutboundClick}
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold text-slate-700 shadow-xs transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
+                    >
+                      <Calendar className="size-3.5" aria-hidden />
+                      View Facility Schedule
+                      <ExternalLink className="size-3 text-slate-500" aria-hidden />
+                    </a>
+                  ) : null}
                   <a
                     href={googleMapsUrl}
                     target="_blank"

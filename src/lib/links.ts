@@ -1,4 +1,33 @@
 import type { Category } from "./domain";
+import {
+  FACILITY_CONTACTS,
+  type FacilityContact,
+  getFacilityContact,
+  getFacilityPhone,
+  getFacilityScheduleUrl,
+} from "./facilities";
+
+export {
+  FACILITY_CONTACTS,
+  type FacilityContact,
+  getFacilityContact,
+  getFacilityPhone,
+  getFacilityScheduleUrl,
+};
+
+/**
+ * Evergreen Schedule URL resolver adhering strictly to icefinder-audit guidelines:
+ * 1. Zero raw PDFs.
+ * 2. If Poirier, routes to internal /schedules/coquitlam-poirier.
+ * 3. Returns verified evergreen schedule URL for the facility.
+ */
+export function getEvergreenScheduleUrl(facilitySlug?: string | null): string {
+  if (!facilitySlug) return "/";
+  if (facilitySlug === "poirier") {
+    return "/schedules/coquitlam-poirier";
+  }
+  return FACILITY_CONTACTS[facilitySlug]?.scheduleUrl ?? "/";
+}
 
 export const CANLAN_PROGRAMS_FALLBACK =
   "https://apps.daysmartrecreation.com/dash/x/#/online/canlan/programs?facility_ids=1";
@@ -26,11 +55,11 @@ export const BURNABY_FACILITY_URLS: Record<string, string> = {
 
 export const BURNABY_FACILITY_SCHEDULE_URLS: Record<string, string> = {
   "rosemary-brown":
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/rosemary-brown-recreation-centre",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=180&viewMode=list",
   kensington:
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/kensington-complex",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=147&viewMode=list",
   "bill-copeland":
-    "https://www.burnaby.ca/recreation-and-arts/recreation-facilities/bill-copeland-sports-centre",
+    "https://anc.ca.apm.activecommunities.com/burnaby/activity/search?onlineSiteId=0&center_ids=146&viewMode=list",
 };
 
 export const BURNABY_DAILY_ACTIVITIES_URL =
@@ -362,6 +391,49 @@ export function getNewWestminsterUrl(activityId?: number | string | null): strin
   return NEW_WESTMINSTER_SEARCH_URL;
 }
 
+// ── Planet Ice (DaySmart) ────────────────────────────────────────────────
+export const PLANET_ICE_HOME_URL = "https://planetice.ca/";
+
+export const PLANET_ICE_FACILITY_URLS: Record<string, string> = {
+  "planet-ice-coquitlam": "https://planetice.ca/coquitlam/",
+  "planet-ice-delta": "https://planetice.ca/delta/",
+  "planet-ice-maple-ridge": "https://planetice.ca/maple-ridge/",
+};
+
+export const PLANET_ICE_FACILITY_IDS: Record<string, number> = {
+  "planet-ice-coquitlam": 3,
+  "planet-ice-maple-ridge": 4,
+  "planet-ice-delta": 5,
+};
+
+export function getPlanetIceEventUrl(eventId: number | string): string {
+  const cleanId = String(eventId).replace(/^daysmart:/i, "").replace(/\D/g, "");
+  return `https://apps.daysmartrecreation.com/dash/x/#/online/planetice/event/${cleanId}`;
+}
+
+export function getPlanetIcePortalUrl(facilitySlug?: string | null): string {
+  const facId = facilitySlug ? PLANET_ICE_FACILITY_IDS[facilitySlug] : undefined;
+  if (facId) {
+    return `https://apps.daysmartrecreation.com/dash/x/#/online/planetice/programs?facility_ids=${facId}`;
+  }
+  return `https://apps.daysmartrecreation.com/dash/x/#/online/planetice/programs`;
+}
+
+export function getPlanetIceUrl(opts: {
+  activityId?: number | string | null;
+  externalId?: string | null;
+  facilitySlug?: string | null;
+}): string {
+  const cleanId = opts.activityId ?? (opts.externalId ? String(opts.externalId).replace(/^daysmart:/i, "").replace(/\D/g, "") : null);
+  if (cleanId) {
+    return getPlanetIceEventUrl(cleanId);
+  }
+  if (opts.facilitySlug && PLANET_ICE_FACILITY_URLS[opts.facilitySlug]) {
+    return PLANET_ICE_FACILITY_URLS[opts.facilitySlug];
+  }
+  return PLANET_ICE_HOME_URL;
+}
+
 /**
  * Universal link resolver for UI components and serializers.
  * Generates direct session registration URLs across all platforms.
@@ -385,13 +457,35 @@ export function resolveBookingUrl(opts: {
   void rawTitle;
 
   // 1. Scotia Barn / Canlan (DaySmart)
-  if (bookingPlatform === "canlan" || facilitySlug === "scotia-barn" || (bookingUrl && bookingUrl.includes("daysmartrecreation.com"))) {
+  if (
+    bookingPlatform === "canlan" ||
+    facilitySlug === "scotia-barn" ||
+    (bookingUrl && (bookingUrl.includes("/canlan/") || (bookingUrl.includes("daysmartrecreation.com") && !bookingUrl.includes("/planetice/"))))
+  ) {
     const eventIdMatch = bookingUrl?.match(/event\/(\d+)/i);
     const canlanId = eventIdMatch ? eventIdMatch[1] : (rawExternalId ? rawExternalId.replace(/\D/g, "") : (activityId ? String(activityId) : null));
     if (canlanId) {
       return getCanlanEventUrl(canlanId);
     }
     return CANLAN_PROGRAMS_FALLBACK;
+  }
+
+  // 1b. Planet Ice (DaySmart)
+  if (
+    bookingPlatform === "daysmart" ||
+    (facilitySlug && ["planet-ice-coquitlam", "planet-ice-delta", "planet-ice-maple-ridge"].includes(facilitySlug)) ||
+    (bookingUrl && (bookingUrl.includes("/planetice/") || bookingUrl.includes("planetice.ca")))
+  ) {
+    const eventIdMatch = bookingUrl?.match(/event\/(\d+)/i);
+    const planetIceId =
+      eventIdMatch ? eventIdMatch[1] : (rawExternalId ? rawExternalId.replace(/^daysmart:/i, "").replace(/\D/g, "") : (activityId ? String(activityId) : null));
+    if (planetIceId) {
+      return getPlanetIceEventUrl(planetIceId);
+    }
+    if (facilitySlug && PLANET_ICE_FACILITY_URLS[facilitySlug]) {
+      return PLANET_ICE_FACILITY_URLS[facilitySlug];
+    }
+    return PLANET_ICE_HOME_URL;
   }
 
   // 2. City of Vancouver (ActiveNet)

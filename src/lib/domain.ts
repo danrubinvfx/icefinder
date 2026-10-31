@@ -36,6 +36,7 @@ export const MUNICIPALITIES = [
   "Coquitlam",
   "Delta",
   "Surrey",
+  "Maple Ridge",
 ] as const;
 
 export type Municipality = (typeof MUNICIPALITIES)[number];
@@ -75,7 +76,7 @@ export function municipalityToTab(municipality: string): Municipality {
   return municipality as Municipality;
 }
 
-export type BookingPlatform = "activenet" | "canlan" | "perfectmind";
+export type BookingPlatform = "activenet" | "canlan" | "perfectmind" | "daysmart";
 
 export interface FacilitySeed {
   slug: string;
@@ -391,6 +392,44 @@ export const FACILITIES: FacilitySeed[] = [
     bookingPlatform: "activenet",
     sheets: 1,
     activenetSite: "Moody Park Arena",
+  },
+
+  // ── Planet Ice (DaySmart) ────────────────────────────────────────────────
+  {
+    slug: "planet-ice-coquitlam",
+    name: "Planet Ice Coquitlam",
+    shortName: "Planet Ice Coquitlam",
+    municipality: "Coquitlam",
+    address: "2300 Rocket Way, Coquitlam, BC V3K 6Z2",
+    lat: 49.2304,
+    lng: -122.8281,
+    bookingPlatform: "daysmart",
+    sheets: 4,
+    daysmartFacilityId: 3,
+  },
+  {
+    slug: "planet-ice-delta",
+    name: "Planet Ice Delta",
+    shortName: "Planet Ice Delta",
+    municipality: "Delta",
+    address: "10388 Nordel Ct, Delta, BC V4G 1J7",
+    lat: 49.1491,
+    lng: -122.938,
+    bookingPlatform: "daysmart",
+    sheets: 4,
+    daysmartFacilityId: 5,
+  },
+  {
+    slug: "planet-ice-maple-ridge",
+    name: "Planet Ice Maple Ridge",
+    shortName: "Planet Ice Maple Ridge",
+    municipality: "Maple Ridge",
+    address: "23588 Jim Robson Way, Maple Ridge, BC V2W 1B8",
+    lat: 49.1938,
+    lng: -122.5659,
+    bookingPlatform: "daysmart",
+    sheets: 2,
+    daysmartFacilityId: 4,
   },
 ];
 
