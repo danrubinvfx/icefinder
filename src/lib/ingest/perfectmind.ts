@@ -18,6 +18,7 @@ import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
+  RICHMOND_PERFECTMIND_REGISTRATION_URL,
 } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -239,7 +240,9 @@ export async function collectPerfectMind(
     const activityId = c.CourseIdTrimmed ? Number(c.CourseIdTrimmed) : null;
     const externalId = c.EventId ? `perfectmind:${c.EventId}` : null;
     const bookingUrl =
-      facility.municipality === "Coquitlam" || facility.slug === "poirier"
+      facility.municipality === "Richmond" || ["richmond-ice-centre", "minoru"].includes(facility.slug)
+        ? RICHMOND_PERFECTMIND_REGISTRATION_URL
+        : facility.municipality === "Coquitlam" || facility.slug === "poirier"
         ? (category === "public_skate"
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)

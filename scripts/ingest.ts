@@ -17,6 +17,7 @@ import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
+  RICHMOND_PERFECTMIND_REGISTRATION_URL,
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
@@ -86,7 +87,9 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
     }
 
     const cleanUrl =
-      s.facility.municipality === "Coquitlam" || s.facility.slug === "poirier"
+      s.facility.municipality === "Richmond" || ["richmond-ice-centre", "minoru"].includes(s.facility.slug)
+        ? RICHMOND_PERFECTMIND_REGISTRATION_URL
+        : s.facility.municipality === "Coquitlam" || s.facility.slug === "poirier"
         ? (s.category === "public_skate"
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
