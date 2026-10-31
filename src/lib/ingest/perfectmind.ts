@@ -20,7 +20,7 @@ import {
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
   RICHMOND_ICE_CENTRE_CALENDAR_URL,
   RICHMOND_MINORU_CALENDAR_URL,
-  SURREY_PERFECTMIND_CALENDAR_URL,
+  SURREY_PERFECTMIND_WIDGET_URL,
   NVRC_PERFECTMIND_WIDGET_URL,
 } from "../links";
 import { fetchJson } from "./http";
@@ -157,7 +157,10 @@ function matchesSurreyFacility(loc: string, slug: string): boolean {
     case "north-surrey":
       return l.includes("north surrey");
     case "surrey-sport-leisure":
-      return l.includes("surrey sport") || l.includes("leisure");
+      return (
+        (l.includes("surrey sport") || l.includes("leisure") || l.includes("sslc")) &&
+        !l.includes("north surrey")
+      );
     case "cloverdale-ice":
       return l.includes("cloverdale");
     case "south-surrey":
@@ -229,7 +232,9 @@ export async function collectPerfectMind(
         "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4BookingPages/Classes?widgetId=b4059e75-9755-401f-a7b5-d7c75361420d";
       await sleep(POLITE_FACILITY_COOLDOWN_MS);
       const allSurrey = await getPerfectMindClassesCached(url, calendarId, log, "Surrey All Arenas");
-      classes = allSurrey.filter((c) => matchesSurreyFacility(c.Location ?? "", facility.slug));
+      classes = allSurrey.filter((c) =>
+        matchesSurreyFacility(`${c.Location ?? ""} ${c.Facility ?? ""} ${c.EventName ?? ""}`, facility.slug)
+      );
     } else if (facility.municipality === "North Vancouver") {
       const calendarId = "9290cb7e-d450-4972-b327-b89aa12b2a69";
       const url =
@@ -296,7 +301,7 @@ export async function collectPerfectMind(
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
         : facility.municipality === "Surrey"
-        ? SURREY_PERFECTMIND_CALENDAR_URL
+        ? SURREY_PERFECTMIND_WIDGET_URL
         : facility.municipality === "North Vancouver"
         ? NVRC_PERFECTMIND_WIDGET_URL
         : resolveBookingUrl({

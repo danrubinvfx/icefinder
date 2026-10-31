@@ -19,6 +19,7 @@ import {
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
   RICHMOND_ICE_CENTRE_CALENDAR_URL,
   RICHMOND_MINORU_CALENDAR_URL,
+  SURREY_PERFECTMIND_WIDGET_URL,
   SURREY_PERFECTMIND_CALENDAR_URL,
   NVRC_PERFECTMIND_WIDGET_URL,
   getWestVancouverUrl,
@@ -113,7 +114,7 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
         : s.facility.municipality === "Surrey"
-        ? SURREY_PERFECTMIND_CALENDAR_URL
+        ? SURREY_PERFECTMIND_WIDGET_URL
         : s.facility.municipality === "North Vancouver"
         ? NVRC_PERFECTMIND_WIDGET_URL
         : s.facility.municipality === "West Vancouver" || s.facility.slug === "west-vancouver-arena"

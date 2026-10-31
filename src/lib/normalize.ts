@@ -55,6 +55,7 @@ export function normalizeCategory(rawTitle: string): Category | null {
     return "hockey_dropin";
   }
   if (
+    /drop[\s-]?in\s*skat/.test(t) ||
     /(leisure|public|family|adult|toonie|everyone welcome|parent\s*(&|and)?\s*(tot|preschooler|participation)|youth|senior|50\+|55\+|50 and better|discount|community|lap|all\s*ages|queer)\s*skat/.test(
       t,
     ) ||

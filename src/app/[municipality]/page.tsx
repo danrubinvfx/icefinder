@@ -16,6 +16,7 @@ const VALID_MUNICIPALITIES: Record<string, string> = {
   richmond: "Richmond",
   coquitlam: "Coquitlam",
   delta: "Delta",
+  surrey: "Surrey",
 };
 
 interface CityMeta {
@@ -66,6 +67,12 @@ const CITY_DETAILS: Record<string, CityMeta> = {
     description:
       "Live drop-in hockey, stick & puck, and public skating schedules for Sungod, North Delta, South Delta, and Tilbury Ice.",
     tab: "Delta",
+  },
+  surrey: {
+    title: "Surrey Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    description:
+      "Real-time drop-in ice schedules for North Surrey, Surrey Sport & Leisure, Cloverdale, South Surrey, and Newton Arena.",
+    tab: "Surrey",
   },
 };
 

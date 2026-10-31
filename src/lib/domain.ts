@@ -35,6 +35,7 @@ export const MUNICIPALITIES = [
   "Richmond",
   "Coquitlam",
   "Delta",
+  "Surrey",
 ] as const;
 
 export type Municipality = (typeof MUNICIPALITIES)[number];
@@ -293,6 +294,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.2016,
     lng: -122.8719,
     bookingPlatform: "perfectmind",
+    sheets: 3,
   },
   {
     slug: "surrey-sport-leisure",
@@ -303,6 +305,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.1601,
     lng: -122.7645,
     bookingPlatform: "perfectmind",
+    sheets: 3,
   },
   {
     slug: "cloverdale-ice",
@@ -313,6 +316,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.1177,
     lng: -122.7302,
     bookingPlatform: "perfectmind",
+    sheets: 2,
   },
   {
     slug: "south-surrey",
@@ -323,6 +327,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.0416,
     lng: -122.8122,
     bookingPlatform: "perfectmind",
+    sheets: 1,
   },
   {
     slug: "newton-arena",
@@ -333,6 +338,7 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.1321,
     lng: -122.8447,
     bookingPlatform: "perfectmind",
+    sheets: 1,
   },
 
   // ── North Vancouver (PerfectMind) ───────────────────────────────────────
