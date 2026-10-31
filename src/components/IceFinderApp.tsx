@@ -4,7 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2 } from "lucide-react";
-import { CATEGORIES, CATEGORY_LABELS, MUNICIPALITIES, type Category, type Municipality } from "@/lib/domain";
+import {
+  CATEGORIES,
+  CATEGORY_LABELS,
+  MUNICIPALITIES,
+  matchesMunicipalityFilter,
+  municipalityToTab,
+  type Category,
+  type Municipality,
+} from "@/lib/domain";
 import type { FeedPayload, SessionDTO } from "@/lib/queries";
 import {
   addDaysYmd,
@@ -202,7 +210,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
 
   const availableFacilities = useMemo(() => {
     if (municipality === "All Metro Van") return feed.facilities;
-    return feed.facilities.filter((f) => f.municipality === municipality);
+    return feed.facilities.filter((f) => matchesMunicipalityFilter(f.municipality, municipality));
   }, [feed.facilities, municipality]);
 
   // If active facility is not in current municipality, reset facility to "all"
@@ -219,8 +227,10 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
     for (const { s, day, endMs } of indexed) {
       if (days.has(day) && endMs > now) {
         counts["All Metro Van"] = (counts["All Metro Van"] || 0) + 1;
-        if (s.municipality && counts[s.municipality] !== undefined) {
-          counts[s.municipality]++;
+        for (const m of MUNICIPALITIES) {
+          if (m !== "All Metro Van" && matchesMunicipalityFilter(s.municipality, m)) {
+            counts[m] = (counts[m] || 0) + 1;
+          }
         }
       }
     }
@@ -233,7 +243,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       ({ s, day, endMs }) =>
         days.has(day) &&
         endMs > now &&
-        (municipality === "All Metro Van" || s.municipality === municipality) &&
+        matchesMunicipalityFilter(s.municipality, municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
         (!goalieOnly || goalieNeeded(s)),
@@ -248,7 +258,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
       if (
         days.has(day) &&
         endMs > now &&
-        (municipality === "All Metro Van" || s.municipality === municipality) &&
+        matchesMunicipalityFilter(s.municipality, municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
         (!goalieOnly || goalieNeeded(s))
@@ -522,7 +532,7 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
             Metro Vancouver Real-Time Ice Times &amp; Drop-In Schedules
           </h1>
           <p className="text-xs sm:text-sm text-slate-600">
-            Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.
+            Find real-time ice times, adult drop-in hockey, stick &amp; puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.
           </p>
         </header>
 
@@ -616,16 +626,16 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
               Metro Vancouver Arenas &amp; Drop-In Facilities
             </h2>
             <p className="text-xs text-slate-500">
-              Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, Richmond, Coquitlam, and Delta.
+              Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster.
             </p>
           </div>
 
           <div className="space-y-4">
             {MUNICIPALITIES.filter((m) => m !== "All Metro Van").map((mun) => {
-              const munFacilities = feed.facilities.filter((f) => f.municipality === mun);
+              const munFacilities = feed.facilities.filter((f) => matchesMunicipalityFilter(f.municipality, mun));
               if (munFacilities.length === 0) return null;
               return (
-                <div key={mun} id={mun.toLowerCase()} className="scroll-mt-24 space-y-2">
+                <div key={mun} id={mun.toLowerCase().replace(/\s+/g, "-")} className="scroll-mt-24 space-y-2">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
                     {mun} Arenas &amp; Schedules
                   </h3>
@@ -660,11 +670,11 @@ export function IceFinderApp({ initialFeed }: { initialFeed: FeedPayload }) {
                           <button
                             type="button"
                             onClick={() => {
-                              setMunicipality(fac.municipality as Municipality);
+                              setMunicipality(municipalityToTab(fac.municipality));
                               setFacility(fac.slug);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
-                            className="text-xs font-semibold text-ice-600 hover:text-ice-800"
+                            className="text-xs font-semibold text-ice-600 hover:text-ice-800 cursor-pointer"
                           >
                             Filter ice times for {fac.shortName} &rarr;
                           </button>

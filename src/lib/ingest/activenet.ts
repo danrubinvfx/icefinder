@@ -1,8 +1,7 @@
 /**
- * Target 1 — City of Burnaby WebReg (ActiveNet / ActiveCommunities).
+ * ActiveNet / ActiveCommunities Ingestion Runner.
  *
- * Burnaby publishes bookable drop-ins as single-day "Reserve In Advance: …" activities
- * on its ActiveNet REST endpoint (the same JSON API the public Activity Search SPA uses).
+ * Covers Burnaby, West Vancouver, and New Westminster municipal booking platforms.
  * Goalie rosters are listed as separate "(GOALIE)" activities at the same slot; we merge them
  * into their parent session so the UI can show goalie availability.
  */
@@ -16,13 +15,19 @@ import {
   sanitizeSessionNotes,
   sessionKey,
 } from "../normalize";
-import { getBurnabyDetailUrl, getBurnabyFallbackUrl, getBurnabyPublicSkateUrl } from "../links";
+import {
+  resolveBookingUrl,
+  getBurnabyDetailUrl,
+  getBurnabyFallbackUrl,
+  getBurnabyPublicSkateUrl,
+  getWestVancouverUrl,
+  getNewWestminsterUrl,
+} from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
-const BASE = "https://anc.ca.apm.activecommunities.com/burnaby/rest/activities/list?locale=en-US";
-/** Keyword searches that cover every ice drop-in type Burnaby publishes. */
-const KEYWORDS = ["Recreational Hockey", "Shoot", "Figure Skating", "Stick", "Shinny"];
+/** Keyword searches that cover ice drop-in types published on ActiveNet. */
+const KEYWORDS = ["Recreational Hockey", "Shoot", "Figure Skating", "Stick", "Shinny", "Skate"];
 const PAGE_SIZE = 20; // ActiveNet caps pages at 20 records
 const MAX_PAGES_PER_KEYWORD = 12;
 export const POLITE_FACILITY_COOLDOWN_MS = 1500;
@@ -35,14 +40,15 @@ interface ActiveNetItem {
   desc?: string;
   description?: string;
   notes?: string;
-  site: string;
-  category: string;
+  site?: string;
+  location?: { label?: string };
+  category?: string;
   date_range_start: string; // YYYY-MM-DD
   time_range: string; // "11:30 AM - 12:45 PM" | "Noon - 1:15 PM"
   only_one_day: boolean;
   total_open: number; // capacity
   already_enrolled: number;
-  detail_url: string;
+  detail_url?: string;
   fee?: { label?: string };
   urgent_message?: { status_description?: string | null };
 }
@@ -52,50 +58,118 @@ interface ActiveNetResponse {
   body: { activity_items: ActiveNetItem[] };
 }
 
-/** Per-run cache so each keyword is fetched once and shared across rinks. */
+/** Per-run cache so each keyword is fetched once per municipality and shared across rinks. */
 const keywordCache = new Map<string, Promise<ActiveNetItem[]>>();
 
 export function resetActiveNetCache() {
   keywordCache.clear();
 }
 
-async function fetchKeyword(keyword: string, window: IngestWindow, log: IngestLogger): Promise<ActiveNetItem[]> {
+function getActiveNetEndpoints(municipality: string): {
+  primaryUrl: string;
+  fallbackUrl?: string;
+  referer: string;
+  tenant: string;
+} {
+  if (municipality === "West Vancouver") {
+    return {
+      primaryUrl: "https://anc.ca.apm.activecommunities.com/westvanrec/rest/activities/list?locale=en-US",
+      fallbackUrl: "https://anc.ca.apm.activecommunities.com/westvancouver/rest/activities/list?locale=en-US",
+      referer: "https://anc.ca.apm.activecommunities.com/westvanrec/activity/search",
+      tenant: "westvancouver",
+    };
+  }
+  if (municipality === "New Westminster") {
+    return {
+      primaryUrl: "https://anc.ca.apm.activecommunities.com/newwestminster/rest/activities/list?locale=en-US",
+      referer: "https://anc.ca.apm.activecommunities.com/newwestminster/activity/search",
+      tenant: "newwestminster",
+    };
+  }
+  return {
+    primaryUrl: "https://anc.ca.apm.activecommunities.com/burnaby/rest/activities/list?locale=en-US",
+    referer: "https://anc.ca.apm.activecommunities.com/burnaby/activity/search",
+    tenant: "burnaby",
+  };
+}
+
+async function fetchKeywordPage(
+  url: string,
+  referer: string,
+  keyword: string,
+  page: number,
+): Promise<ActiveNetResponse> {
+  return fetchJson<ActiveNetResponse>(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+      Origin: "https://anc.ca.apm.activecommunities.com",
+      Referer: referer,
+      page_info: JSON.stringify({ order_by: "", page_number: page, total_records_per_page: PAGE_SIZE }),
+    },
+    body: JSON.stringify({
+      activity_search_pattern: { activity_select_param: 2, activity_keyword: keyword },
+      activity_transfer_pattern: {},
+    }),
+  });
+}
+
+async function fetchKeyword(
+  municipality: string,
+  keyword: string,
+  window: IngestWindow,
+  log: IngestLogger,
+): Promise<ActiveNetItem[]> {
+  const config = getActiveNetEndpoints(municipality);
   const items: ActiveNetItem[] = [];
   const lastDay = toYmd(window.to);
-  for (let page = 1; page <= MAX_PAGES_PER_KEYWORD; page++) {
-    if (page > 1) {
-      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+
+  try {
+    let targetUrl = config.primaryUrl;
+    for (let page = 1; page <= MAX_PAGES_PER_KEYWORD; page++) {
+      if (page > 1) {
+        await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      }
+
+      let data: ActiveNetResponse;
+      try {
+        data = await fetchKeywordPage(targetUrl, config.referer, keyword, page);
+      } catch (reqErr) {
+        if (config.fallbackUrl && targetUrl !== config.fallbackUrl) {
+          targetUrl = config.fallbackUrl;
+          data = await fetchKeywordPage(targetUrl, config.referer, keyword, page);
+        } else {
+          throw reqErr;
+        }
+      }
+
+      if (data.headers?.response_code !== "0000") {
+        throw new Error(`ActiveNet response_code=${data.headers?.response_code} for "${keyword}"`);
+      }
+      const batch = data.body?.activity_items ?? [];
+      items.push(...batch);
+      const totalPages = data.headers.page_info?.total_page ?? 1;
+      const lastStart = batch.at(-1)?.date_range_start ?? "";
+      if (page >= totalPages || batch.length === 0 || (lastStart && lastStart > lastDay)) break;
     }
-    const data = await fetchJson<ActiveNetResponse>(BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json;charset=utf-8",
-        Origin: "https://anc.ca.apm.activecommunities.com",
-        Referer: "https://anc.ca.apm.activecommunities.com/burnaby/activity/search",
-        page_info: JSON.stringify({ order_by: "", page_number: page, total_records_per_page: PAGE_SIZE }),
-      },
-      body: JSON.stringify({
-        activity_search_pattern: { activity_select_param: 2, activity_keyword: keyword },
-        activity_transfer_pattern: {},
-      }),
-    });
-    if (data.headers?.response_code !== "0000") {
-      throw new Error(`ActiveNet response_code=${data.headers?.response_code} for "${keyword}"`);
-    }
-    const batch = data.body?.activity_items ?? [];
-    items.push(...batch);
-    const totalPages = data.headers.page_info?.total_page ?? 1;
-    // Results are sorted by date ascending — stop once we've paged past the window.
-    const lastStart = batch.at(-1)?.date_range_start ?? "";
-    if (page >= totalPages || batch.length === 0 || lastStart > lastDay) break;
+    log.info(`  activenet [${config.tenant}]: "${keyword}" → ${items.length} raw activities`);
+  } catch (err) {
+    log.warn(`  activenet [${config.tenant}]: sweep notice for "${keyword}" (${(err as Error).message})`);
   }
-  log.info(`  activenet: "${keyword}" → ${items.length} raw activities`);
   return items;
 }
 
-function getKeyword(keyword: string, window: IngestWindow, log: IngestLogger) {
-  if (!keywordCache.has(keyword)) keywordCache.set(keyword, fetchKeyword(keyword, window, log));
-  return keywordCache.get(keyword)!;
+function getKeyword(
+  municipality: string,
+  keyword: string,
+  window: IngestWindow,
+  log: IngestLogger,
+) {
+  const cacheKey = `${municipality}|${keyword}`;
+  if (!keywordCache.has(cacheKey)) {
+    keywordCache.set(cacheKey, fetchKeyword(municipality, keyword, window, log));
+  }
+  return keywordCache.get(cacheKey)!;
 }
 
 /** Parse "11:30 AM", "Noon", "Midnight" → [h, m] (24h). */
@@ -128,11 +202,16 @@ export async function collectActiveNet(
   window: IngestWindow,
   log: IngestLogger,
 ): Promise<NormalizedSession[]> {
-  if (!facility.activenetSite) throw new Error(`No ActiveNet site mapping for ${facility.slug}`);
-
   // Fetch keywords sequentially (polite), sharing results across rinks via the cache.
   const all: ActiveNetItem[] = [];
-  for (const kw of KEYWORDS) all.push(...(await getKeyword(kw, window, log)));
+  try {
+    for (const kw of KEYWORDS) {
+      const items = await getKeyword(facility.municipality, kw, window, log);
+      all.push(...items);
+    }
+  } catch (err) {
+    log.warn(`  activenet: error collecting keywords for ${facility.slug} (${(err as Error).message})`);
+  }
 
   const seenIds = new Set<number>();
   const sessions = new Map<string, NormalizedSession>();
@@ -141,16 +220,35 @@ export async function collectActiveNet(
   for (const item of all) {
     if (seenIds.has(item.id)) continue;
     seenIds.add(item.id);
-    if (item.site !== facility.activenetSite || !item.only_one_day) continue;
+
+    // Site / Location matching
+    const itemSite = (item.site || item.location?.label || "").toLowerCase();
+    const targetSite = (facility.activenetSite ?? "").toLowerCase();
+    const siteMatches =
+      !targetSite ||
+      itemSite.includes(targetSite) ||
+      targetSite.includes(itemSite) ||
+      (facility.slug === "west-vancouver-arena" && (itemSite.includes("ice") || itemSite.includes("arena"))) ||
+      (facility.slug === "moody-park" && (itemSite.includes("moody") || itemSite.includes("arena")));
+
+    if (!siteMatches) continue;
 
     const category = normalizeCategory(item.name);
     if (!category) continue;
 
+    if (!item.time_range) continue;
     const [startStr, endStr] = item.time_range.split(/\s+-\s+/);
     if (!startStr || !endStr) continue;
-    const startTime = localToUtc(item.date_range_start, parseClock(startStr));
-    let endTime = localToUtc(item.date_range_start, parseClock(endStr));
-    if (endTime <= startTime) endTime = new Date(endTime.getTime() + 86_400_000);
+
+    let startTime: Date;
+    let endTime: Date;
+    try {
+      startTime = localToUtc(item.date_range_start, parseClock(startStr));
+      endTime = localToUtc(item.date_range_start, parseClock(endStr));
+      if (endTime <= startTime) endTime = new Date(endTime.getTime() + 86_400_000);
+    } catch {
+      continue;
+    }
     if (startTime < window.from || startTime >= window.to) continue;
 
     const key = sessionKey(facility.slug, startTime, category);
@@ -171,13 +269,27 @@ export async function collectActiveNet(
       existing.openSpots += Math.max(0, total - enrolled);
       continue;
     }
+
     const numericActivityId = typeof item.id === "number" ? item.id : Number(item.id) || null;
     const directUrl =
-      category === "public_skate"
-        ? getBurnabyPublicSkateUrl(facility.slug)
-        : numericActivityId
-        ? getBurnabyDetailUrl(numericActivityId)
-        : getBurnabyFallbackUrl(category, facility.slug);
+      facility.municipality === "Burnaby"
+        ? category === "public_skate"
+          ? getBurnabyPublicSkateUrl(facility.slug)
+          : numericActivityId
+          ? getBurnabyDetailUrl(numericActivityId)
+          : getBurnabyFallbackUrl(category, facility.slug)
+        : facility.municipality === "West Vancouver"
+        ? getWestVancouverUrl(numericActivityId)
+        : facility.municipality === "New Westminster"
+        ? getNewWestminsterUrl(numericActivityId)
+        : resolveBookingUrl({
+            category,
+            bookingPlatform: facility.bookingPlatform,
+            activityId: numericActivityId,
+            facilitySlug: facility.slug,
+            municipality: facility.municipality,
+            source: "live",
+          });
 
     const rawDesc = item.desc ?? item.description ?? item.notes ?? null;
     const notes = sanitizeSessionNotes(rawDesc);
@@ -187,10 +299,10 @@ export async function collectActiveNet(
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(item.name),
       category,
-      rink: null,
+      rink: item.site || item.location?.label || null,
       startTime,
       endTime,
-      totalSpots: total,
+      totalSpots: total || 25,
       openSpots: Math.max(0, total - enrolled),
       waitlistCount: waitlistMatch ? Number(waitlistMatch[1]) : 0,
       isGoalieFree: false,
@@ -206,8 +318,7 @@ export async function collectActiveNet(
     });
   }
 
-  // Merge goalie rosters into parent sessions. Burnaby runs dedicated goalie rosters
-  // (capped at ~3) that are free/discounted vs. skater admission.
+  // Merge goalie rosters into parent sessions
   for (const { key, item } of goalieRows) {
     const parent = sessions.get(key);
     if (!parent) continue;

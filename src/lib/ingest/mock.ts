@@ -113,6 +113,53 @@ const MOCK_TEMPLATES: Record<string, Template[]> = {
     { title: "Stick and Puck Open Session", days: [1, 3, 5], start: "11:00", minutes: 75, capacity: 20, cost: 8.5 },
     { title: "Adult Drop-in Hockey", days: [2, 4], start: "22:00", minutes: 75, capacity: 20, cost: 9.5, goalie: { capacity: 2 } },
   ],
+
+  // ── Surrey ──
+  "north-surrey": [
+    { title: "Drop-in Hockey 19+", days: [1, 3, 5], start: "21:45", minutes: 75, capacity: 22, rink: "Rink 1", cost: 8.25, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [2, 4], start: "11:30", minutes: 75, capacity: 20, rink: "Rink 2", cost: 6.75 },
+    { title: "Figure Skating Buy-on", days: [6, 0], start: "07:30", minutes: 60, capacity: 18, rink: "Rink 1", cost: 10.0 },
+  ],
+  "surrey-sport-leisure": [
+    { title: "Drop-in Hockey 19+", days: [2, 4, 6], start: "22:00", minutes: 75, capacity: 22, rink: "Rink 1", cost: 8.25, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 3], start: "12:00", minutes: 75, capacity: 20, rink: "Rink 3", cost: 6.75 },
+  ],
+  "cloverdale-ice": [
+    { title: "Drop-in Hockey 19+", days: [1, 4], start: "21:30", minutes: 75, capacity: 22, rink: "Rink 2", cost: 8.25, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [3, 5], start: "13:00", minutes: 75, capacity: 20, rink: "Rink 1", cost: 6.75 },
+  ],
+  "south-surrey": [
+    { title: "Drop-in Hockey", days: [0, 3], start: "21:45", minutes: 75, capacity: 22, cost: 8.25, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 4], start: "12:30", minutes: 75, capacity: 20, cost: 6.75 },
+  ],
+  "newton-arena": [
+    { title: "Drop-in Hockey 19+", days: [2, 5], start: "22:00", minutes: 75, capacity: 20, cost: 8.25, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 3], start: "12:00", minutes: 75, capacity: 20, cost: 6.75 },
+  ],
+
+  // ── North Vancouver ──
+  "karen-magnussen": [
+    { title: "Adult Drop-in Hockey", days: [1, 3], start: "21:30", minutes: 75, capacity: 22, cost: 8.5, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [2, 4], start: "11:00", minutes: 75, capacity: 20, cost: 7.0 },
+  ],
+  "harry-jerome": [
+    { title: "Drop-in Hockey 19+", days: [2, 4], start: "21:45", minutes: 75, capacity: 22, cost: 8.5, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 3], start: "12:00", minutes: 75, capacity: 20, cost: 7.0 },
+    { title: "Figure Skating Buy-on", days: [6], start: "08:00", minutes: 60, capacity: 18, cost: 10.0 },
+  ],
+
+  // ── West Vancouver ──
+  "west-vancouver-arena": [
+    { title: "Adult Drop-in Hockey 19+", days: [2, 4], start: "21:30", minutes: 75, capacity: 22, rink: "Ice Arena", cost: 8.5, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 3, 5], start: "11:45", minutes: 75, capacity: 20, rink: "Ice Arena", cost: 7.0 },
+    { title: "Figure Skating Buy-on", days: [0, 6], start: "07:45", minutes: 60, capacity: 18, rink: "Ice Arena", cost: 10.5 },
+  ],
+
+  // ── New Westminster ──
+  "moody-park": [
+    { title: "Adult Drop-in Hockey", days: [1, 3, 5], start: "21:45", minutes: 75, capacity: 22, cost: 8.0, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 6.5 },
+  ],
 };
 
 const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
@@ -189,6 +236,50 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
   ],
   tilbury: [
     { title: "Public Skate", days: [0], start: "13:30", minutes: 75, capacity: 150, cost: 6.5 },
+  ],
+
+  // ── Surrey ──
+  "north-surrey": [
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 220, rink: "Rink 1", cost: 6.5 },
+    { title: "Family Skate", days: [5], start: "18:00", minutes: 90, capacity: 200, rink: "Rink 2", cost: 6.5 },
+  ],
+  "surrey-sport-leisure": [
+    { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 250, rink: "Rink 1", cost: 6.5 },
+    { title: "Everyone Welcome Skate", days: [3], start: "18:30", minutes: 90, capacity: 200, rink: "Rink 1", cost: 6.5 },
+  ],
+  "cloverdale-ice": [
+    { title: "Public Skate", days: [6, 0], start: "13:00", minutes: 90, capacity: 220, rink: "Rink 1", cost: 6.5 },
+    { title: "Youth Skate", days: [5], start: "18:00", minutes: 90, capacity: 200, rink: "Rink 2", cost: 4.5 },
+  ],
+  "south-surrey": [
+    { title: "Public Skate", days: [0], start: "14:30", minutes: 90, capacity: 200, cost: 6.5 },
+  ],
+  "newton-arena": [
+    { title: "Public Skate", days: [6], start: "13:30", minutes: 90, capacity: 180, cost: 6.5 },
+  ],
+
+  // ── North Vancouver ──
+  "karen-magnussen": [
+    { title: "Public Skate", days: [0], start: "15:15", minutes: 120, capacity: 200, cost: 6.75 },
+    { title: "Family Skate", days: [0], start: "13:15", minutes: 90, capacity: 200, cost: 6.75 },
+    { title: "Public Skate", days: [3], start: "10:30", minutes: 90, capacity: 180, cost: 6.75 },
+  ],
+  "harry-jerome": [
+    { title: "Public Skate", days: [2, 4], start: "11:00", minutes: 90, capacity: 200, cost: 6.75 },
+    { title: "Family Skate", days: [6], start: "13:00", minutes: 90, capacity: 200, cost: 6.75 },
+    { title: "Public Skate", days: [5], start: "18:15", minutes: 90, capacity: 200, cost: 6.75 },
+  ],
+
+  // ── West Vancouver ──
+  "west-vancouver-arena": [
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 200, rink: "Ice Arena", cost: 6.75 },
+    { title: "Family Skate", days: [5], start: "18:30", minutes: 90, capacity: 200, rink: "Ice Arena", cost: 6.75 },
+  ],
+
+  // ── New Westminster ──
+  "moody-park": [
+    { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 200, cost: 6.5 },
+    { title: "Family Skate", days: [4], start: "18:30", minutes: 90, capacity: 200, cost: 6.5 },
   ],
 };
 

@@ -300,6 +300,53 @@ export function getDeltaFallbackUrl(
   return getDeltaUrl(category, facilitySlug);
 }
 
+// ── Surrey (PerfectMind) ────────────────────────────────────────────────
+export const SURREY_PERFECTMIND_CALENDAR_URL =
+  "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4BookingPages/Classes?calendarId=5b599b6d-d54f-43c1-b86a-e962d9bf107b&widgetId=b4059e75-9755-401f-a7b5-d7c75361420d&embed=False";
+
+export function getSurreyUrl(): string {
+  return SURREY_PERFECTMIND_CALENDAR_URL;
+}
+
+// ── North Vancouver / NVRC (PerfectMind) ────────────────────────────────
+export const NVRC_PERFECTMIND_WIDGET_URL =
+  "https://nvrc.perfectmind.com/23734/Clients/BookMe4?widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a";
+
+export const NVRC_PERFECTMIND_CALENDAR_URL =
+  "https://nvrc.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?calendarId=9290cb7e-d450-4972-b327-b89aa12b2a69&widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a&embed=False";
+
+export function getNvrcUrl(): string {
+  return NVRC_PERFECTMIND_WIDGET_URL;
+}
+
+// ── West Vancouver (ActiveNet) ──────────────────────────────────────────
+export const WEST_VANCOUVER_SEARCH_URL =
+  "https://anc.ca.apm.activecommunities.com/westvancouver/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+
+export function getWestVancouverDetailUrl(activityId: number | string): string {
+  const cleanId = String(activityId).replace(/^activenet:/i, "").replace(/\D/g, "");
+  return `https://anc.ca.apm.activecommunities.com/westvancouver/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true`;
+}
+
+export function getWestVancouverUrl(activityId?: number | string | null): string {
+  if (activityId) return getWestVancouverDetailUrl(activityId);
+  return WEST_VANCOUVER_SEARCH_URL;
+}
+
+// ── New Westminster (ActiveNet) ─────────────────────────────────────────
+export const NEW_WESTMINSTER_SEARCH_URL =
+  "https://anc.ca.apm.activecommunities.com/newwestminster/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+
+export function getNewWestminsterDetailUrl(activityId: number | string): string {
+  const cleanId = String(activityId).replace(/^activenet:/i, "").replace(/\D/g, "");
+  return `https://anc.ca.apm.activecommunities.com/newwestminster/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true`;
+}
+
+export function getNewWestminsterUrl(activityId?: number | string | null): string {
+  if (activityId) return getNewWestminsterDetailUrl(activityId);
+  return NEW_WESTMINSTER_SEARCH_URL;
+}
+
 /**
  * Universal link resolver for UI components and serializers.
  * Generates direct session registration URLs across all platforms.
@@ -366,7 +413,46 @@ export function resolveBookingUrl(opts: {
     return DELTA_PERFECTMIND_ARENA_DROPIN_URL;
   }
 
-  // 6. Burnaby (ActiveNet)
+  // 6. Surrey (PerfectMind)
+  if (
+    municipality === "Surrey" ||
+    (facilitySlug &&
+      ["north-surrey", "surrey-sport-leisure", "cloverdale-ice", "south-surrey", "newton-arena"].includes(
+        facilitySlug,
+      ))
+  ) {
+    return SURREY_PERFECTMIND_CALENDAR_URL;
+  }
+
+  // 7. North Vancouver (NVRC PerfectMind)
+  if (
+    municipality === "North Vancouver" ||
+    (facilitySlug && ["karen-magnussen", "harry-jerome"].includes(facilitySlug))
+  ) {
+    return NVRC_PERFECTMIND_WIDGET_URL;
+  }
+
+  // 8. West Vancouver (ActiveNet)
+  if (municipality === "West Vancouver" || facilitySlug === "west-vancouver-arena") {
+    const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
+    const rawId =
+      activityId ??
+      (rawExternalId ? String(rawExternalId).replace(/^activenet:/i, "").replace(/\D/g, "") : null) ??
+      (detailMatch ? detailMatch[1] : null);
+    return getWestVancouverUrl(rawId);
+  }
+
+  // 9. New Westminster (ActiveNet)
+  if (municipality === "New Westminster" || facilitySlug === "moody-park") {
+    const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
+    const rawId =
+      activityId ??
+      (rawExternalId ? String(rawExternalId).replace(/^activenet:/i, "").replace(/\D/g, "") : null) ??
+      (detailMatch ? detailMatch[1] : null);
+    return getNewWestminsterUrl(rawId);
+  }
+
+  // 10. Burnaby (ActiveNet)
   if (category === "public_skate") {
     return getBurnabyPublicSkateUrl(facilitySlug);
   }

@@ -1,7 +1,7 @@
 /**
  * Target 3 — PerfectMind booking platform.
  *
- * Covers Richmond, Coquitlam, and Delta municipalities.
+ * Covers Richmond, Coquitlam, Delta, Surrey, and North Vancouver (NVRC) municipalities.
  * Queries the public BookMe4 calendar endpoints with polite rate-limiting.
  */
 import { fromZonedTime } from "date-fns-tz";
@@ -20,6 +20,8 @@ import {
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
   RICHMOND_ICE_CENTRE_CALENDAR_URL,
   RICHMOND_MINORU_CALENDAR_URL,
+  SURREY_PERFECTMIND_CALENDAR_URL,
+  NVRC_PERFECTMIND_WIDGET_URL,
 } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -149,6 +151,36 @@ function matchesDeltaFacility(loc: string, slug: string): boolean {
   }
 }
 
+function matchesSurreyFacility(loc: string, slug: string): boolean {
+  const l = loc.toLowerCase();
+  switch (slug) {
+    case "north-surrey":
+      return l.includes("north surrey");
+    case "surrey-sport-leisure":
+      return l.includes("surrey sport") || l.includes("leisure");
+    case "cloverdale-ice":
+      return l.includes("cloverdale");
+    case "south-surrey":
+      return l.includes("south surrey");
+    case "newton-arena":
+      return l.includes("newton");
+    default:
+      return false;
+  }
+}
+
+function matchesNVFacility(loc: string, slug: string): boolean {
+  const l = loc.toLowerCase();
+  switch (slug) {
+    case "karen-magnussen":
+      return l.includes("karen") || l.includes("magnussen");
+    case "harry-jerome":
+      return l.includes("harry") || l.includes("jerome");
+    default:
+      return false;
+  }
+}
+
 export async function collectPerfectMind(
   facility: FacilitySeed,
   window: IngestWindow,
@@ -191,6 +223,20 @@ export async function collectPerfectMind(
       await sleep(POLITE_FACILITY_COOLDOWN_MS);
       const allDelta = await getPerfectMindClassesCached(url, calendarId, log, "Delta All Arenas");
       classes = allDelta.filter((c) => matchesDeltaFacility(c.Location ?? "", facility.slug));
+    } else if (facility.municipality === "Surrey") {
+      const calendarId = "5b599b6d-d54f-43c1-b86a-e962d9bf107b";
+      const url =
+        "https://cityofsurrey.perfectmind.com/23615/Clients/BookMe4BookingPages/Classes?widgetId=b4059e75-9755-401f-a7b5-d7c75361420d";
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      const allSurrey = await getPerfectMindClassesCached(url, calendarId, log, "Surrey All Arenas");
+      classes = allSurrey.filter((c) => matchesSurreyFacility(c.Location ?? "", facility.slug));
+    } else if (facility.municipality === "North Vancouver") {
+      const calendarId = "9290cb7e-d450-4972-b327-b89aa12b2a69";
+      const url =
+        "https://nvrc.perfectmind.com/23734/Clients/BookMe4BookingPages/Classes?widgetId=a28b2c65-61af-407f-80d1-eaa58f30a94a";
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      const allNV = await getPerfectMindClassesCached(url, calendarId, log, "NVRC All Arenas");
+      classes = allNV.filter((c) => matchesNVFacility(c.Location ?? "", facility.slug));
     }
   } catch (err) {
     log.warn(`  perfectmind: sweep error for ${facility.slug} (${(err as Error).message})`);
@@ -249,6 +295,10 @@ export async function collectPerfectMind(
         ? (category === "public_skate"
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
+        : facility.municipality === "Surrey"
+        ? SURREY_PERFECTMIND_CALENDAR_URL
+        : facility.municipality === "North Vancouver"
+        ? NVRC_PERFECTMIND_WIDGET_URL
         : resolveBookingUrl({
             category,
             bookingPlatform: facility.bookingPlatform,

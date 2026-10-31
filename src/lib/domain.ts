@@ -30,12 +30,50 @@ export const MUNICIPALITIES = [
   "All Metro Van",
   "Burnaby",
   "Vancouver",
+  "North Shore",
   "Richmond",
-  "Coquitlam",
+  "Tri-Cities",
+  "Surrey",
   "Delta",
+  "New West",
 ] as const;
 
 export type Municipality = (typeof MUNICIPALITIES)[number];
+
+export function matchesMunicipalityFilter(
+  itemMunicipality: string | null | undefined,
+  filter: Municipality,
+): boolean {
+  if (filter === "All Metro Van") return true;
+  if (!itemMunicipality) return false;
+  if (filter === "North Shore") {
+    return itemMunicipality === "North Vancouver" || itemMunicipality === "West Vancouver";
+  }
+  if (filter === "Tri-Cities") {
+    return (
+      itemMunicipality === "Coquitlam" ||
+      itemMunicipality === "Port Coquitlam" ||
+      itemMunicipality === "Port Moody"
+    );
+  }
+  if (filter === "New West") {
+    return itemMunicipality === "New Westminster" || itemMunicipality === "New West";
+  }
+  return itemMunicipality === filter;
+}
+
+export function municipalityToTab(municipality: string): Municipality {
+  if (municipality === "North Vancouver" || municipality === "West Vancouver") return "North Shore";
+  if (
+    municipality === "Coquitlam" ||
+    municipality === "Port Coquitlam" ||
+    municipality === "Port Moody"
+  ) {
+    return "Tri-Cities";
+  }
+  if (municipality === "New Westminster") return "New West";
+  return municipality as Municipality;
+}
 
 export type BookingPlatform = "activenet" | "canlan" | "perfectmind";
 
@@ -243,6 +281,106 @@ export const FACILITIES: FacilitySeed[] = [
     lat: 49.1332,
     lng: -123.0116,
     bookingPlatform: "perfectmind",
+  },
+
+  // ── Surrey (PerfectMind) ────────────────────────────────────────────────
+  {
+    slug: "north-surrey",
+    name: "North Surrey Sport & Ice Complex",
+    shortName: "North Surrey",
+    municipality: "Surrey",
+    address: "10950 126A St, Surrey, BC V3V 0E5",
+    lat: 49.2016,
+    lng: -122.8719,
+    bookingPlatform: "perfectmind",
+  },
+  {
+    slug: "surrey-sport-leisure",
+    name: "Surrey Sport & Leisure Complex",
+    shortName: "Surrey Sport & Leisure",
+    municipality: "Surrey",
+    address: "16555 Fraser Hwy #100, Surrey, BC V4N 0E9",
+    lat: 49.1601,
+    lng: -122.7645,
+    bookingPlatform: "perfectmind",
+  },
+  {
+    slug: "cloverdale-ice",
+    name: "Cloverdale Sport & Ice Complex",
+    shortName: "Cloverdale Ice",
+    municipality: "Surrey",
+    address: "6336 177B St, Surrey, BC V3S 4J1",
+    lat: 49.1177,
+    lng: -122.7302,
+    bookingPlatform: "perfectmind",
+  },
+  {
+    slug: "south-surrey",
+    name: "South Surrey Arena",
+    shortName: "South Surrey",
+    municipality: "Surrey",
+    address: "2199 148 St, Surrey, BC V4A 9P5",
+    lat: 49.0416,
+    lng: -122.8122,
+    bookingPlatform: "perfectmind",
+  },
+  {
+    slug: "newton-arena",
+    name: "Newton Arena",
+    shortName: "Newton",
+    municipality: "Surrey",
+    address: "7120 136B St, Surrey, BC V3W 5X2",
+    lat: 49.1321,
+    lng: -122.8447,
+    bookingPlatform: "perfectmind",
+  },
+
+  // ── North Vancouver (PerfectMind) ───────────────────────────────────────
+  {
+    slug: "karen-magnussen",
+    name: "Karen Magnussen Community Recreation Centre",
+    shortName: "Karen Magnussen",
+    municipality: "North Vancouver",
+    address: "2300 Kirkstone Rd, North Vancouver, BC V7J 3K7",
+    lat: 49.3308,
+    lng: -123.0336,
+    bookingPlatform: "perfectmind",
+  },
+  {
+    slug: "harry-jerome",
+    name: "Harry Jerome Community Recreation Centre",
+    shortName: "Harry Jerome",
+    municipality: "North Vancouver",
+    address: "123 E 23rd St, North Vancouver, BC V7L 3E2",
+    lat: 49.3303,
+    lng: -123.0674,
+    bookingPlatform: "perfectmind",
+  },
+
+  // ── West Vancouver (ActiveNet) ──────────────────────────────────────────
+  {
+    slug: "west-vancouver-arena",
+    name: "West Vancouver Ice Arena",
+    shortName: "West Vancouver",
+    municipality: "West Vancouver",
+    address: "786 22nd St, West Vancouver, BC V7V 4B9",
+    lat: 49.3364,
+    lng: -123.1706,
+    bookingPlatform: "activenet",
+    activenetSite: "Ice Arena",
+  },
+
+  // ── New Westminster (ActiveNet) ─────────────────────────────────────────
+  {
+    slug: "moody-park",
+    name: "Moody Park Arena",
+    shortName: "Moody Park",
+    municipality: "New Westminster",
+    address: "708 8th Ave, New Westminster, BC V3M 2R3",
+    lat: 49.2132,
+    lng: -122.9317,
+    bookingPlatform: "activenet",
+    activenetSite: "Moody Park Arena",
   },
 ];
 

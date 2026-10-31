@@ -19,6 +19,8 @@ import {
   COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL,
   RICHMOND_ICE_CENTRE_CALENDAR_URL,
   RICHMOND_MINORU_CALENDAR_URL,
+  SURREY_PERFECTMIND_CALENDAR_URL,
+  NVRC_PERFECTMIND_WIDGET_URL,
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
@@ -67,7 +69,7 @@ async function seedAllFacilities(prismaClient: PrismaClient) {
       console.error(`Failed to seed facility ${f.slug}:`, err);
     }
   }
-  console.log(`Seeded ${FACILITIES.length} facilities across 5 Metro Vancouver municipalities (POLITE_FACILITY_COOLDOWN_MS=${POLITE_FACILITY_COOLDOWN_MS}).`);
+  console.log(`Seeded ${FACILITIES.length} facilities across Metro Vancouver (POLITE_FACILITY_COOLDOWN_MS=${POLITE_FACILITY_COOLDOWN_MS}).`);
 }
 
 async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
@@ -106,6 +108,10 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
         ? (s.category === "public_skate"
             ? COQUITLAM_PERFECTMIND_PUBLIC_SKATE_CALENDAR_URL
             : COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL)
+        : s.facility.municipality === "Surrey"
+        ? SURREY_PERFECTMIND_CALENDAR_URL
+        : s.facility.municipality === "North Vancouver"
+        ? NVRC_PERFECTMIND_WIDGET_URL
         : resolveBookingUrl({
             bookingUrl: s.bookingUrl,
             category: s.category as Category,

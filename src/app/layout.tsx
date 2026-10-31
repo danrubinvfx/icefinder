@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s | IceFinder",
   },
   description:
-    "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.",
+    "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.",
   keywords: [
     "Vancouver ice times",
     "Burnaby drop in hockey",
@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     "Kensington arena schedule",
     "Poirier ice drop in",
     "Richmond Ice Centre schedules",
+    "Surrey drop in hockey",
+    "North Vancouver skate schedule",
+    "Harry Jerome arena drop in",
+    "West Vancouver ice arena",
+    "Moody Park arena drop in",
   ],
   authors: [{ name: "IceFinder" }],
   creator: "IceFinder",
@@ -78,7 +83,7 @@ const jsonLd = {
       url: "https://icefinder.ca",
       name: "IceFinder",
       description:
-        "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, Richmond, Coquitlam, and Delta arenas.",
+        "Find real-time ice times, adult drop-in hockey, stick & puck, and figure skating buy-ons across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, and New Westminster arenas.",
       inLanguage: "en-CA",
       potentialAction: {
         "@type": "SearchAction",
