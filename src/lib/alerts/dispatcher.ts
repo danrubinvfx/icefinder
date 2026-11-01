@@ -23,7 +23,7 @@ export async function checkAndDispatchAlerts(
   const db = prismaClient ?? defaultPrisma;
   const apiKey = process.env.RESEND_API_KEY;
   const resend = apiKey ? new Resend(apiKey) : null;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "IceFinder Alerts <onboarding@resend.dev>";
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "IceFinder Alerts <alerts@icefinder.ca>";
 
   let dispatched = 0;
   let failed = 0;
