@@ -26,6 +26,7 @@ import {
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
+import { checkAndDispatchAlerts, type TransitionedSession } from "../src/lib/alerts/dispatcher";
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -173,6 +174,7 @@ async function once() {
   try {
     await seedAllFacilities(prisma);
     const report = await runIngestion(prisma, opts);
+    const transitionedSessions: TransitionedSession[] = [...(report.transitionedSessions ?? [])];
 
     // Arena-level sync for Poirier Sport & Leisure Complex
     if (!opts.only?.length || opts.only.includes("poirier")) {
@@ -181,11 +183,18 @@ async function once() {
         const windowFrom = new Date(Date.now() - 3 * 3_600_000);
         const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
         const poirierSessions = await fetchPoirierSessions(windowFrom, windowTo);
-        const count = await upsertPoirierSessions(prisma, poirierSessions);
+        const { count, transitioned } = await upsertPoirierSessions(prisma, poirierSessions);
         console.log(`  ✓ Poirier: ${count} verified sessions synchronized to database.`);
+        transitionedSessions.push(...transitioned);
       } catch (poirierErr) {
         console.error("  ✗ Poirier arena-level ingestion failed:", poirierErr);
       }
+    }
+
+    if (transitionedSessions.length > 0) {
+      console.log(`\n🔔 Spot drop alerts: ${transitionedSessions.length} session(s) transitioned from 0 spots to > 0!`);
+      const alertResult = await checkAndDispatchAlerts(transitionedSessions, prisma);
+      console.log(`  ✓ Dispatched ${alertResult.dispatched} notification email(s) (${alertResult.failed} failed).`);
     }
 
     await sanitizeAllDatabaseRows(prisma);

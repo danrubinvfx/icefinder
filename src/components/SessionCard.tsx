@@ -13,6 +13,7 @@ import {
   Footprints,
   Info,
   AlertCircle,
+  Bell,
 } from "lucide-react";
 import { CATEGORY_SHORT, isSpecialSession, type Category } from "@/lib/domain";
 import { extractSessionRequirements, sanitizeSessionNotes } from "@/lib/normalize";
@@ -20,6 +21,7 @@ import { formatTimeRange } from "@/lib/time";
 import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
 import { SessionDetailsModal } from "./SessionDetailsModal";
+import { SpotAlertModal } from "./SpotAlertModal";
 
 const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }> = {
   figure_buyon: { bar: "bg-pink-500", text: "text-pink-700 ring-1 ring-pink-300/80 font-bold", bg: "bg-pink-50" },
@@ -142,6 +144,7 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
 
 export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: string }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
   const style = CATEGORY_STYLE[s.category];
   const isSpecial = isSpecialSession(s);
   const isWalkIn = s.category === "public_skate" || Boolean(s.is_walkin) || s.source === "schedule";
@@ -346,17 +349,37 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 Session Details
                 <Info className="size-3.5" aria-hidden />
               </button>
+            ) : full ? (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAlertModalOpen(true)}
+                  className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 cursor-pointer"
+                >
+                  <Bell className="size-3.5" aria-hidden />
+                  Spot Drop Alert
+                </button>
+                <a
+                  href={destinationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={handleOutboundClick}
+                  className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-slate-100 px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 focus:outline-none"
+                  title="Open booking site"
+                >
+                  Waitlist
+                  <ExternalLink className="size-3" aria-hidden />
+                </a>
+              </div>
             ) : (
               <a
                 href={destinationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleOutboundClick}
-                className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2 ${
-                  full ? "bg-slate-100 text-slate-700 hover:bg-slate-200" : "bg-ice-600 text-white hover:bg-ice-700"
-                }`}
+                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-ice-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2"
               >
-                {full ? "Join Waitlist" : cta}
+                {cta}
                 <ExternalLink className="size-3.5" aria-hidden />
               </a>
             )}
@@ -372,6 +395,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
       </article>
 
       <SessionDetailsModal session={s} isOpen={modalOpen} onClose={() => setModalOpen(false)} />
+      <SpotAlertModal session={s} isOpen={alertModalOpen} onClose={() => setAlertModalOpen(false)} />
     </>
   );
 }

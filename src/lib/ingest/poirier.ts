@@ -742,7 +742,7 @@ export async function fetchPoirierSessions(startDate: Date, endDate: Date): Prom
 export async function upsertPoirierSessions(
   prisma: PrismaClient,
   sessions: NormalizedSession[],
-): Promise<number> {
+): Promise<{ count: number; transitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> }> {
   const facility = await prisma.facility.upsert({
     where: { slug: "poirier" },
     update: {},
@@ -766,8 +766,23 @@ export async function upsertPoirierSessions(
   });
 
   let upserted = 0;
+  const transitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> = [];
+
   for (const s of sessions) {
     const id = poirierSessionKey(s.facilitySlug, s.startTime, s.category);
+    const existing = await prisma.iceSession.findUnique({
+      where: { id },
+      select: { id: true, openSpots: true, bookingUrl: true },
+    });
+
+    if (existing && existing.openSpots === 0 && s.openSpots > 0) {
+      transitioned.push({
+        sessionKey: id,
+        openSpots: s.openSpots,
+        bookingUrl: s.bookingUrl || existing.bookingUrl,
+      });
+    }
+
     await prisma.iceSession.upsert({
       where: { id },
       update: {
@@ -815,5 +830,5 @@ export async function upsertPoirierSessions(
     upserted++;
   }
 
-  return upserted;
+  return { count: upserted, transitioned };
 }

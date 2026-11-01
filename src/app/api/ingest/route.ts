@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { runIngestion } from "@/lib/ingest/engine";
+import { checkAndDispatchAlerts } from "@/lib/alerts/dispatcher";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -22,6 +23,9 @@ async function handle(req: NextRequest) {
   const mode = modeParam === "mock" || modeParam === "live" ? modeParam : "auto";
   try {
     const report = await runIngestion(prisma, { mode, days: 8 });
+    if (report.transitionedSessions && report.transitionedSessions.length > 0) {
+      await checkAndDispatchAlerts(report.transitionedSessions, prisma);
+    }
     return NextResponse.json(report, { status: report.status === "failed" ? 502 : 200 });
   } catch (err) {
     console.error("[IceFinder] Ingest handler error:", err);

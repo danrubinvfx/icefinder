@@ -67,3 +67,19 @@ model SyncRun {
 
   @@map("sync_runs")
 }
+
+model AlertSubscription {
+  id           String    @id @default(cuid())
+  email        String
+  sessionKey   String
+  sessionTitle String
+  facilityName String
+  startTime    DateTime
+  bookingUrl   String?
+  status       String    @default("pending")
+  createdAt    DateTime  @default(now())
+  notifiedAt   DateTime?
+
+  @@index([sessionKey, status])
+  @@index([email])
+}

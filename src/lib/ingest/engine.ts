@@ -43,6 +43,7 @@ export interface IngestReport {
   finishedAt: Date;
   status: "ok" | "partial" | "failed";
   results: FacilityResult[];
+  transitionedSessions?: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }>;
 }
 
 const consoleLogger: IngestLogger = {
@@ -139,6 +140,7 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
 
   const targets = FACILITIES.filter((f) => !opts.only?.length || opts.only.includes(f.slug));
   const results: FacilityResult[] = [];
+  const allTransitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> = [];
 
   for (let i = 0; i < targets.length; i++) {
     const facility = targets[i];
@@ -206,7 +208,19 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
             ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
             : sessionKey(s.facilitySlug, s.startTime, s.category);
         seen.push(id);
-        const existing = await prisma.iceSession.findUnique({ where: { id }, select: { id: true } });
+        const existing = await prisma.iceSession.findUnique({
+          where: { id },
+          select: { id: true, openSpots: true, bookingUrl: true },
+        });
+
+        if (existing && existing.openSpots === 0 && s.openSpots > 0) {
+          allTransitioned.push({
+            sessionKey: id,
+            openSpots: s.openSpots,
+            bookingUrl: s.bookingUrl || existing.bookingUrl,
+          });
+        }
+
         await prisma.iceSession.upsert({
           where: { id },
           // Dedupe: the slot already exists → refresh live capacity fields only (+ metadata that can change).
@@ -288,5 +302,5 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
   });
 
   tee.info(`\nDone in ${((finishedAt.getTime() - startedAt.getTime()) / 1000).toFixed(1)}s • status=${status} • ${upserted} rows upserted`);
-  return { startedAt, finishedAt, status, results };
+  return { startedAt, finishedAt, status, results, transitionedSessions: allTransitioned };
 }
