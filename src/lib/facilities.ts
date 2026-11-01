@@ -43,25 +43,25 @@ export const FACILITY_CONTACTS: Record<string, FacilityContact> = {
     slug: 'sungod',
     name: 'Sungod Recreation Centre',
     phone: '(604) 952-3075',
-    scheduleUrl: 'https://www.delta.ca/parks-recreation/drop-in-activities/skating'
+    scheduleUrl: 'https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?calendarId=c9b7ca71-56dc-43e3-aec7-d976239a5660&widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9&embed=False'
   },
   'north-delta': {
     slug: 'north-delta',
     name: 'North Delta Recreation Centre',
     phone: '(604) 952-3045',
-    scheduleUrl: 'https://www.delta.ca/parks-recreation/drop-in-activities/skating'
+    scheduleUrl: 'https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?calendarId=c9b7ca71-56dc-43e3-aec7-d976239a5660&widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9&embed=False'
   },
   'south-delta': {
     slug: 'south-delta',
     name: 'South Delta Recreation Centre',
     phone: '(604) 952-3020',
-    scheduleUrl: 'https://www.delta.ca/parks-recreation/drop-in-activities/skating'
+    scheduleUrl: 'https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?calendarId=c9b7ca71-56dc-43e3-aec7-d976239a5660&widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9&embed=False'
   },
   'tilbury': {
     slug: 'tilbury',
     name: 'Tilbury Ice',
     phone: '(604) 952-3000',
-    scheduleUrl: 'https://www.delta.ca/parks-recreation/drop-in-activities/skating'
+    scheduleUrl: 'https://cityofdelta.perfectmind.com/24140/Clients/BookMe4BookingPages/Classes?calendarId=c9b7ca71-56dc-43e3-aec7-d976239a5660&widgetId=0da93182-93fb-4314-87bd-a8ba4ee9a4c9&embed=False'
   },
   // North Vancouver (NVRC)
   'harry-jerome': {
