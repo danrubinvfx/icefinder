@@ -99,6 +99,7 @@ function Toggle({
 interface IceFinderAppProps {
   initialFeed: FeedPayload;
   initialMunicipality?: Municipality;
+  initialCategory?: CategoryFilter;
   seoTitle?: string;
   seoDescription?: string;
 }
@@ -106,6 +107,7 @@ interface IceFinderAppProps {
 export function IceFinderApp({
   initialFeed,
   initialMunicipality,
+  initialCategory,
   seoTitle,
   seoDescription,
 }: IceFinderAppProps) {
@@ -119,7 +121,7 @@ export function IceFinderApp({
   );
   const [dateMode, setDateMode] = useState<DateMode>("today");
   const [pickedDate, setPickedDate] = useState<string>("");
-  const [category, setCategory] = useState<CategoryFilter>("all");
+  const [category, setCategory] = useState<CategoryFilter>(initialCategory ?? "all");
   const [openOnly, setOpenOnly] = useState(false);
   const [goalieOnly, setGoalieOnly] = useState(false);
   const [facility, setFacility] = useState<string>("all");

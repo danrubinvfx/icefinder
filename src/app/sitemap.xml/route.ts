@@ -5,6 +5,10 @@ export async function GET() {
 
   const routes = [
     { loc: "https://www.icefinder.ca/", priority: "1.0", changefreq: "hourly" },
+    { loc: "https://www.icefinder.ca/figure-skating", priority: "0.9", changefreq: "hourly" },
+    { loc: "https://www.icefinder.ca/drop-in-hockey", priority: "0.9", changefreq: "hourly" },
+    { loc: "https://www.icefinder.ca/stick-and-puck", priority: "0.9", changefreq: "hourly" },
+    { loc: "https://www.icefinder.ca/public-skate", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/burnaby", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/vancouver", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/richmond", priority: "0.8", changefreq: "hourly" },
