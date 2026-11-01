@@ -298,7 +298,7 @@ export const DELTA_PERFECTMIND_REGISTRATION_URL =
   DELTA_PERFECTMIND_ARENA_DROPIN_URL;
 
 export const DELTA_SKATING_FALLBACK_URL =
-  "https://www.delta.ca/community-culture/recreation-activities/skating-ice-sports";
+  "https://www.delta.ca/parks-recreation/sports-activities/programs-registration/arenas";
 
 export const DELTA_ONLINE_REGISTRATION_URL =
   DELTA_PERFECTMIND_ARENA_DROPIN_URL;
