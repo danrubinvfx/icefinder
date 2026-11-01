@@ -31,12 +31,12 @@ export const MUNICIPALITIES = [
   "Burnaby",
   "Vancouver",
   "North Shore",
-  "New West",
   "Richmond",
-  "Coquitlam",
-  "Delta",
+  "Tri-Cities",
   "Surrey",
-  "Maple Ridge",
+  "Delta",
+  "Langley",
+  "New West",
 ] as const;
 
 export type Municipality = (typeof MUNICIPALITIES)[number];
@@ -53,11 +53,20 @@ export function matchesMunicipalityFilter(
   if (filter === "New West") {
     return itemMunicipality === "New Westminster" || itemMunicipality === "New West";
   }
-  if (filter === "Coquitlam") {
+  if (filter === "Tri-Cities" || (filter as string) === "Coquitlam") {
     return (
       itemMunicipality === "Coquitlam" ||
       itemMunicipality === "Port Coquitlam" ||
-      itemMunicipality === "Port Moody"
+      itemMunicipality === "Port Moody" ||
+      itemMunicipality === "Maple Ridge"
+    );
+  }
+  if (filter === "Langley") {
+    return (
+      itemMunicipality === "Langley" ||
+      itemMunicipality === "Township of Langley" ||
+      itemMunicipality === "Langley Township" ||
+      itemMunicipality === "City of Langley"
     );
   }
   return itemMunicipality === filter;
@@ -69,9 +78,18 @@ export function municipalityToTab(municipality: string): Municipality {
   if (
     municipality === "Coquitlam" ||
     municipality === "Port Coquitlam" ||
-    municipality === "Port Moody"
+    municipality === "Port Moody" ||
+    municipality === "Maple Ridge"
   ) {
-    return "Coquitlam";
+    return "Tri-Cities";
+  }
+  if (
+    municipality === "Langley" ||
+    municipality === "Township of Langley" ||
+    municipality === "Langley Township" ||
+    municipality === "City of Langley"
+  ) {
+    return "Langley";
   }
   return municipality as Municipality;
 }
@@ -392,6 +410,32 @@ export const FACILITIES: FacilitySeed[] = [
     bookingPlatform: "activenet",
     sheets: 1,
     activenetSite: "Moody Park Arena",
+  },
+
+  // ── Langley (ActiveNet) ─────────────────────────────────────────────────
+  {
+    slug: "george-preston",
+    name: "George Preston Recreation Centre",
+    shortName: "George Preston",
+    municipality: "Langley",
+    address: "20699 42 Ave, Langley, BC V3A 5A9",
+    lat: 49.0789,
+    lng: -122.6517,
+    bookingPlatform: "activenet",
+    sheets: 1,
+    activenetSite: "George Preston",
+  },
+  {
+    slug: "aldergrove-cucc",
+    name: "Aldergrove Credit Union Community Centre",
+    shortName: "Aldergrove CUCC",
+    municipality: "Langley",
+    address: "27032 Fraser Hwy, Aldergrove, BC V4W 3P6",
+    lat: 49.0579,
+    lng: -122.4749,
+    bookingPlatform: "activenet",
+    sheets: 1,
+    activenetSite: "Aldergrove",
   },
 
   // ── Planet Ice (DaySmart) ────────────────────────────────────────────────

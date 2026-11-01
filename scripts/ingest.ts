@@ -23,6 +23,7 @@ import {
   NVRC_PERFECTMIND_WIDGET_URL,
   getWestVancouverUrl,
   getNewWestminsterUrl,
+  getLangleyUrl,
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
@@ -132,6 +133,8 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
         ? getWestVancouverUrl(s.activityId)
         : s.facility.municipality === "New Westminster" || s.facility.slug === "moody-park"
         ? getNewWestminsterUrl(s.activityId)
+        : s.facility.municipality === "Langley" || s.facility.slug === "george-preston" || s.facility.slug === "aldergrove-cucc"
+        ? getLangleyUrl({ activityId: s.activityId, category: s.category as Category, facilitySlug: s.facility.slug })
         : resolveBookingUrl({
             bookingUrl: s.bookingUrl,
             category: s.category as Category,

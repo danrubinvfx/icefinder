@@ -22,6 +22,7 @@ import {
   getBurnabyPublicSkateUrl,
   getWestVancouverUrl,
   getNewWestminsterUrl,
+  getLangleyUrl,
 } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
@@ -84,6 +85,13 @@ function getActiveNetEndpoints(municipality: string): {
       primaryUrl: "https://anc.ca.apm.activecommunities.com/newwestminster/rest/activities/list?locale=en-US",
       referer: "https://anc.ca.apm.activecommunities.com/newwestminster/activity/search",
       tenant: "newwestminster",
+    };
+  }
+  if (municipality === "Langley") {
+    return {
+      primaryUrl: "https://anc.ca.apm.activecommunities.com/tol/rest/activities/list?locale=en-US",
+      referer: "https://anc.ca.apm.activecommunities.com/tol/activity/search",
+      tenant: "tol",
     };
   }
   return {
@@ -204,13 +212,24 @@ export async function collectActiveNet(
 ): Promise<NormalizedSession[]> {
   // Fetch keywords sequentially (polite), sharing results across rinks via the cache.
   const all: ActiveNetItem[] = [];
-  try {
-    for (const kw of KEYWORDS) {
-      const items = await getKeyword(facility.municipality, kw, window, log);
-      all.push(...items);
+  if (facility.municipality === "Langley") {
+    try {
+      for (const kw of KEYWORDS) {
+        const items = await getKeyword(facility.municipality, kw, window, log);
+        all.push(...items);
+      }
+    } catch (langleyErr) {
+      log.warn(`  activenet [tol]: isolated Langley sweep notice for ${facility.slug} (${(langleyErr as Error).message})`);
     }
-  } catch (err) {
-    log.warn(`  activenet: error collecting keywords for ${facility.slug} (${(err as Error).message})`);
+  } else {
+    try {
+      for (const kw of KEYWORDS) {
+        const items = await getKeyword(facility.municipality, kw, window, log);
+        all.push(...items);
+      }
+    } catch (err) {
+      log.warn(`  activenet: error collecting keywords for ${facility.slug} (${(err as Error).message})`);
+    }
   }
 
   const seenIds = new Set<number>();
@@ -229,7 +248,9 @@ export async function collectActiveNet(
       itemSite.includes(targetSite) ||
       targetSite.includes(itemSite) ||
       (facility.slug === "west-vancouver-arena" && (itemSite.includes("ice") || itemSite.includes("arena"))) ||
-      (facility.slug === "moody-park" && (itemSite.includes("moody") || itemSite.includes("arena")));
+      (facility.slug === "moody-park" && (itemSite.includes("moody") || itemSite.includes("arena"))) ||
+      (facility.slug === "george-preston" && (itemSite.includes("preston") || itemSite.includes("george"))) ||
+      (facility.slug === "aldergrove-cucc" && (itemSite.includes("aldergrove") || itemSite.includes("acucc")));
 
     if (!siteMatches) continue;
 
@@ -282,6 +303,8 @@ export async function collectActiveNet(
         ? getWestVancouverUrl(numericActivityId)
         : facility.municipality === "New Westminster"
         ? getNewWestminsterUrl(numericActivityId)
+        : facility.municipality === "Langley"
+        ? getLangleyUrl({ activityId: numericActivityId, category, facilitySlug: facility.slug })
         : resolveBookingUrl({
             category,
             bookingPlatform: facility.bookingPlatform,

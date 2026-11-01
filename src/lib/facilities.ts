@@ -99,6 +99,19 @@ export const FACILITY_CONTACTS: Record<string, FacilityContact> = {
   // West Vancouver & New Westminster
   'west-vancouver-arena': { slug: 'west-vancouver-arena', name: 'West Vancouver Ice Arena', phone: '(604) 925-7270', scheduleUrl: 'https://westvancouver.ca/skating' },
   'moody-park': { slug: 'moody-park', name: 'Moody Park Arena', phone: '(604) 525-5301', scheduleUrl: 'https://www.newwestcity.ca/skating' },
+  // Langley (Township of Langley)
+  'george-preston': {
+    slug: 'george-preston',
+    name: 'George Preston Recreation Centre',
+    phone: '(604) 534-3266',
+    scheduleUrl: 'https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list'
+  },
+  'aldergrove-cucc': {
+    slug: 'aldergrove-cucc',
+    name: 'Aldergrove Credit Union Community Centre',
+    phone: '(604) 857-4299',
+    scheduleUrl: 'https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list'
+  },
   // Surrey
   'north-surrey': {
     slug: 'north-surrey',

@@ -161,6 +161,18 @@ const MOCK_TEMPLATES: Record<string, Template[]> = {
     { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 6.5 },
   ],
 
+  // ── Langley ──
+  "george-preston": [
+    { title: "Adult Drop-in Hockey 19+", days: [1, 3, 5], start: "21:45", minutes: 75, capacity: 22, rink: "Main Arena", cost: 8.5, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, rink: "Main Arena", cost: 7.0 },
+    { title: "Figure Skating Buy-on", days: [2, 4, 6], start: "07:30", minutes: 60, capacity: 18, rink: "Main Arena", cost: 10.5 },
+  ],
+  "aldergrove-cucc": [
+    { title: "Adult Drop-in Hockey 19+", days: [2, 4, 6], start: "21:30", minutes: 75, capacity: 22, rink: "Arena", cost: 8.5, goalie: { capacity: 2 } },
+    { title: "Stick & Puck", days: [1, 3, 5], start: "11:30", minutes: 75, capacity: 20, rink: "Arena", cost: 7.0 },
+    { title: "Figure Skating Buy-on", days: [1, 3], start: "07:45", minutes: 60, capacity: 18, rink: "Arena", cost: 10.5 },
+  ],
+
   // ── Planet Ice ──
   "planet-ice-coquitlam": [
     { title: "Stick & Puck (All Ages)", days: [1, 3, 5], start: "11:00", minutes: 90, capacity: 20, rink: "Rink 1", cost: 12.0 },
@@ -297,6 +309,16 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
   "moody-park": [
     { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 200, cost: 6.5 },
     { title: "Family Skate", days: [4], start: "18:30", minutes: 90, capacity: 200, cost: 6.5 },
+  ],
+
+  // ── Langley ──
+  "george-preston": [
+    { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 200, rink: "Main Arena", cost: 6.5 },
+    { title: "Family Skate", days: [5], start: "18:45", minutes: 90, capacity: 200, rink: "Main Arena", cost: 6.5 },
+  ],
+  "aldergrove-cucc": [
+    { title: "Public Skate", days: [6, 0], start: "14:00", minutes: 90, capacity: 200, rink: "Arena", cost: 6.5 },
+    { title: "Everyone Welcome Skate", days: [3], start: "18:30", minutes: 90, capacity: 200, rink: "Arena", cost: 6.5 },
   ],
 
   // ── Planet Ice ──

@@ -391,6 +391,39 @@ export function getNewWestminsterUrl(activityId?: number | string | null): strin
   return NEW_WESTMINSTER_SEARCH_URL;
 }
 
+// ── Langley (Township of Langley ActiveNet) ────────────────────────────
+export const LANGLEY_SEARCH_FALLBACK =
+  "https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+
+export function getLangleyDetailUrl(activityId: number | string): string {
+  const cleanId = String(activityId).replace(/^activenet:/i, "").replace(/\D/g, "");
+  return `https://anc.ca.apm.activecommunities.com/tol/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true`;
+}
+
+export function getLangleyCategoryUrl(category?: Category | string): string {
+  const keyword =
+    category === "hockey_dropin"
+      ? "hockey"
+      : category === "stick_and_puck"
+      ? "stick"
+      : category === "figure_buyon"
+      ? "figure"
+      : "skate";
+  return `https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=${encodeURIComponent(keyword)}&viewMode=list`;
+}
+
+export function getLangleyUrl(opts: {
+  activityId?: number | string | null;
+  category?: Category | string | null;
+  facilitySlug?: string | null;
+}): string {
+  const cleanId = opts.activityId
+    ? String(opts.activityId).replace(/^activenet:/i, "").replace(/\D/g, "")
+    : null;
+  if (cleanId) return getLangleyDetailUrl(cleanId);
+  return getLangleyCategoryUrl(opts.category ?? undefined);
+}
+
 // ── Planet Ice (DaySmart) ────────────────────────────────────────────────
 export const PLANET_ICE_HOME_URL = "https://planetice.ca/";
 
@@ -558,7 +591,24 @@ export function resolveBookingUrl(opts: {
     return getNewWestminsterUrl(rawId);
   }
 
-  // 10. Burnaby (ActiveNet)
+  // 10. Langley (Township of Langley ActiveNet)
+  if (
+    municipality === "Langley" ||
+    (facilitySlug && ["george-preston", "aldergrove-cucc"].includes(facilitySlug)) ||
+    (bookingUrl && bookingUrl.includes("/tol/"))
+  ) {
+    const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
+    const rawId =
+      activityId ??
+      (rawExternalId ? String(rawExternalId).replace(/^activenet:/i, "").replace(/\D/g, "") : null) ??
+      (detailMatch ? detailMatch[1] : null);
+    if (rawId) {
+      return getLangleyDetailUrl(rawId);
+    }
+    return getLangleyCategoryUrl(category);
+  }
+
+  // 11. Burnaby (ActiveNet)
   if (category === "public_skate") {
     return getBurnabyPublicSkateUrl(facilitySlug);
   }

@@ -14,6 +14,7 @@ import {
   Info,
   AlertCircle,
   Bell,
+  Flag,
 } from "lucide-react";
 import { CATEGORY_SHORT, isSpecialSession, type Category } from "@/lib/domain";
 import { extractSessionRequirements, sanitizeSessionNotes } from "@/lib/normalize";
@@ -22,6 +23,7 @@ import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
 import { SessionDetailsModal } from "./SessionDetailsModal";
 import { SpotAlertModal } from "./SpotAlertModal";
+import { ReportIssueModal } from "./ReportIssueModal";
 
 const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }> = {
   figure_buyon: { bar: "bg-pink-500", text: "text-pink-700 ring-1 ring-pink-300/80 font-bold", bg: "bg-pink-50" },
@@ -145,6 +147,7 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
 export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: string }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
   const style = CATEGORY_STYLE[s.category];
   const isSpecial = isSpecialSession(s);
   const isWalkIn = s.category === "public_skate" || Boolean(s.is_walkin) || s.source === "schedule";
@@ -385,17 +388,30 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
             )}
           </div>
         </div>
-        <p className="border-t border-slate-100 px-5 py-1.5 text-[11px] text-slate-400" suppressHydrationWarning>
-          {isSpecial
-            ? "⭐ Special Schedule · Offline Notice"
-            : s.source === "schedule"
-            ? "Published schedule"
-            : `Spots updated ${relUpdated}`}
-        </p>
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-1.5 text-[11px] text-slate-400">
+          <p suppressHydrationWarning>
+            {isSpecial
+              ? "⭐ Special Schedule · Offline Notice"
+              : s.source === "schedule"
+              ? "Published schedule"
+              : `Spots updated ${relUpdated}`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setReportModalOpen(true)}
+            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-amber-600 transition cursor-pointer"
+            title="Report an issue with this session"
+            aria-label={`Report an issue with ${s.rawTitle}`}
+          >
+            <Flag className="size-3" aria-hidden />
+            <span>Report issue</span>
+          </button>
+        </div>
       </article>
 
       <SessionDetailsModal session={s} isOpen={modalOpen} onClose={() => setModalOpen(false)} />
       <SpotAlertModal session={s} isOpen={alertModalOpen} onClose={() => setAlertModalOpen(false)} />
+      <ReportIssueModal session={s} isOpen={reportModalOpen} onClose={() => setReportModalOpen(false)} />
     </>
   );
 }

@@ -14,9 +14,11 @@ const VALID_MUNICIPALITIES: Record<string, string> = {
   "north-shore": "North Shore",
   "new-west": "New West",
   richmond: "Richmond",
-  coquitlam: "Coquitlam",
+  coquitlam: "Tri-Cities",
+  "tri-cities": "Tri-Cities",
   delta: "Delta",
   surrey: "Surrey",
+  langley: "Langley",
   "maple-ridge": "Maple Ridge",
 };
 
@@ -58,10 +60,16 @@ const CITY_DETAILS: Record<string, CityMeta> = {
     tab: "Richmond",
   },
   coquitlam: {
-    title: "Coquitlam Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    title: "Tri-Cities Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
       "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex and Planet Ice in Coquitlam.",
-    tab: "Coquitlam",
+    tab: "Tri-Cities",
+  },
+  "tri-cities": {
+    title: "Tri-Cities Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    description:
+      "Real-time drop-in hockey, stick & puck, and public skating schedules for Poirier Sport & Leisure Complex and Planet Ice in Coquitlam.",
+    tab: "Tri-Cities",
   },
   delta: {
     title: "Delta Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
@@ -75,11 +83,17 @@ const CITY_DETAILS: Record<string, CityMeta> = {
       "Real-time drop-in ice schedules for North Surrey, Surrey Sport & Leisure, Cloverdale, South Surrey, and Newton Arena.",
     tab: "Surrey",
   },
+  langley: {
+    title: "Langley Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    description:
+      "Real-time drop-in hockey, stick & puck, and public skating schedules for George Preston Recreation Centre and Aldergrove Credit Union Community Centre.",
+    tab: "Langley",
+  },
   "maple-ridge": {
     title: "Maple Ridge Ice Times & Drop-In Hockey Schedule | IceFinder",
     description:
       "Real-time drop-in hockey, stick & puck, and public skating schedules for Planet Ice Maple Ridge.",
-    tab: "Maple Ridge",
+    tab: "Tri-Cities",
   },
 };
 
