@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { IceFinderApp } from "@/components/IceFinderApp";
 import { CATEGORY_LABELS, matchesMunicipalityFilter, type Municipality } from "@/lib/domain";
 import { getFeed } from "@/lib/queries";
+import { buildSportsEventSchema } from "@/lib/schema";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -161,6 +162,7 @@ export default async function MunicipalityPage({ params }: RouteProps) {
   const tab = details?.tab ?? (cityName as Municipality);
 
   const feed = await getFeed();
+  const facilityMap = new Map(feed.facilities.map((f) => [f.slug, f]));
 
   // Upcoming 48 hours filter for this municipality
   const now = Date.now();
@@ -218,6 +220,11 @@ export default async function MunicipalityPage({ params }: RouteProps) {
           url: session.bookingUrl || `https://www.icefinder.ca/${slug}`,
         })),
       },
+      ...upcomingSessions
+        .slice(0, 15)
+        .map((session) =>
+          buildSportsEventSchema(session, facilityMap.get(session.facilitySlug))
+        ),
     ],
   };
 

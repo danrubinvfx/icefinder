@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { IceFinderApp } from "@/components/IceFinderApp";
 import { CATEGORY_LABELS } from "@/lib/domain";
 import { getFeed } from "@/lib/queries";
+import { buildSportsEventSchema } from "@/lib/schema";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -127,6 +128,8 @@ export default async function CategoryPage({ params }: RouteProps) {
 
   const feed = await getFeed();
 
+  const facilityMap = new Map(feed.facilities.map((f) => [f.slug, f]));
+
   // Upcoming sessions for the next 48 hours filtered specifically to category.enumVal
   const now = Date.now();
   const in48Hours = now + 48 * 60 * 60 * 1000;
@@ -182,30 +185,11 @@ export default async function CategoryPage({ params }: RouteProps) {
           url: session.bookingUrl || `https://www.icefinder.ca/${slug}`,
         })),
       },
-      ...upcomingSessions.slice(0, 15).map((session) => ({
-        "@type": "SportsEvent",
-        name: session.rawTitle,
-        startDate: session.startTime,
-        endDate: session.endTime,
-        location: {
-          "@type": "Place",
-          name: session.facilityName,
-          address: {
-            "@type": "PostalAddress",
-            addressLocality: session.municipality,
-            addressRegion: "BC",
-            addressCountry: "CA",
-          },
-        },
-        offers: {
-          "@type": "Offer",
-          url: session.bookingUrl || `https://www.icefinder.ca/${slug}`,
-          availability:
-            session.openSpots > 0
-              ? "https://schema.org/InStock"
-              : "https://schema.org/SoldOut",
-        },
-      })),
+      ...upcomingSessions
+        .slice(0, 15)
+        .map((session) =>
+          buildSportsEventSchema(session, facilityMap.get(session.facilitySlug))
+        ),
     ],
   };
 
