@@ -19,7 +19,7 @@ import { TIMEZONE, type Category, type FacilitySeed } from "../domain";
 import { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 import { collectActiveNet, resetActiveNetCache } from "./activenet";
 import { getBurnabyPublicSkateUrl } from "../links";
-import { sessionKey } from "../normalize";
+import { extractSessionRequirements, sessionKey } from "../normalize";
 
 export { collectActiveNet, resetActiveNetCache };
 export const collectBurnaby = collectActiveNet;
@@ -38,6 +38,9 @@ export interface RecurringSkateRule {
   end: string; // HH:mm in America/Vancouver
   capacity: number;
   cost: number;
+  requirements?: string[];
+  is_walkin?: boolean;
+  notes?: string | null;
 }
 
 /**
@@ -46,6 +49,30 @@ export interface RecurringSkateRule {
  */
 export const BILL_COPELAND_PUBLIC_SKATE_RULES: RecurringSkateRule[] = [
   {
+    title: "Lap Skate",
+    category: "public_skate",
+    dayOfWeek: 1, // Monday (9:30 AM – 11:30 AM)
+    start: "09:30",
+    end: "11:30",
+    capacity: 220,
+    cost: 6.4,
+    requirements: ["Lap Skate / Conditioning"],
+    is_walkin: true,
+    notes: "8 yrs+, Walk-in",
+  },
+  {
+    title: "Toonie Skate",
+    category: "public_skate",
+    dayOfWeek: 1, // Monday (11:45 AM – 1:15 PM)
+    start: "11:45",
+    end: "13:15",
+    capacity: 250,
+    cost: 2.0,
+    requirements: [],
+    is_walkin: true,
+    notes: "All ages, Walk-in",
+  },
+  {
     title: "Leisure Skate",
     category: "public_skate",
     dayOfWeek: 1, // Monday (12:00 PM – 1:30 PM)
@@ -53,6 +80,8 @@ export const BILL_COPELAND_PUBLIC_SKATE_RULES: RecurringSkateRule[] = [
     end: "13:30",
     capacity: 220,
     cost: 6.4,
+    requirements: [],
+    is_walkin: true,
   },
   {
     title: "Leisure Skate",
@@ -62,6 +91,20 @@ export const BILL_COPELAND_PUBLIC_SKATE_RULES: RecurringSkateRule[] = [
     end: "13:30",
     capacity: 220,
     cost: 6.4,
+    requirements: [],
+    is_walkin: true,
+  },
+  {
+    title: "Lap Skate",
+    category: "public_skate",
+    dayOfWeek: 4, // Thursday (9:00 AM – 10:00 AM)
+    start: "09:00",
+    end: "10:00",
+    capacity: 220,
+    cost: 6.4,
+    requirements: ["Lap Skate / Conditioning"],
+    is_walkin: true,
+    notes: "8 yrs+, Walk-in",
   },
   {
     title: "Everyone Welcome Skate",
@@ -71,6 +114,8 @@ export const BILL_COPELAND_PUBLIC_SKATE_RULES: RecurringSkateRule[] = [
     end: "21:30",
     capacity: 250,
     cost: 6.4,
+    requirements: [],
+    is_walkin: true,
   },
 ];
 
@@ -107,10 +152,18 @@ export async function fetchBurnabySessions(
       return true;
     })
     .map((s) => {
-      if (s.category === "public_skate") {
+      const isLap = /lap\s*skat/i.test(s.rawTitle);
+      const reqs = s.requirements ? [...s.requirements] : [];
+      if (isLap && !reqs.includes("Lap Skate / Conditioning")) {
+        reqs.push("Lap Skate / Conditioning");
+      }
+      if (s.category === "public_skate" || isLap) {
         return {
           ...s,
+          category: "public_skate" as Category,
           bookingUrl: getBurnabyPublicSkateUrl(facility.slug),
+          requirements: reqs,
+          is_walkin: true,
         };
       }
       return s;
@@ -139,11 +192,17 @@ export async function fetchBurnabySessions(
     for (const rule of BILL_COPELAND_PUBLIC_SKATE_RULES) {
       if (rule.dayOfWeek !== dow) continue;
       const startTime = fromZonedTime(`${ymd}T${rule.start}:00`, TIMEZONE);
-      const endTime = fromZonedTime(`${ymd}T${rule.end}:00`, TIMEZONE);
-      if (startTime < window.from || startTime >= window.to) continue;
+      let endTime = fromZonedTime(`${ymd}T${rule.end}:00`, TIMEZONE);
+      if (endTime <= startTime) endTime = new Date(endTime.getTime() + 86_400_000);
+      if (endTime <= window.from || startTime >= window.to) continue;
 
       const key = sessionKey(facility.slug, startTime, rule.category);
       if (!byKey.has(key)) {
+        const ruleRequirements = rule.requirements ?? extractSessionRequirements(rule.notes, rule.title);
+        const reqs = [...ruleRequirements];
+        if (/lap\s*skat/i.test(rule.title) && !reqs.includes("Lap Skate / Conditioning")) {
+          reqs.push("Lap Skate / Conditioning");
+        }
         byKey.set(key, {
           facilitySlug: facility.slug,
           rawTitle: rule.title,
@@ -162,8 +221,9 @@ export async function fetchBurnabySessions(
           source: "schedule",
           activityId: null,
           externalId: null,
-          requirements: [],
-          notes: null,
+          requirements: reqs,
+          notes: rule.notes ?? null,
+          is_walkin: rule.is_walkin ?? true,
         });
       }
     }

@@ -291,7 +291,7 @@ export async function collectActiveNet(
     } catch {
       continue;
     }
-    if (startTime < window.from || startTime >= window.to) continue;
+    if (endTime <= window.from || startTime >= window.to) continue;
 
     const key = sessionKey(facility.slug, startTime, category);
     if (isGoalieListing(item.name)) {
@@ -361,6 +361,10 @@ export async function collectActiveNet(
       externalId: numericActivityId ? `activenet:${numericActivityId}` : null,
       requirements,
       notes,
+      is_walkin:
+        category === "public_skate" ||
+        /lap\s*skat/i.test(item.name) ||
+        requirements.includes("Lap Skate / Conditioning"),
     });
   }
 
@@ -541,8 +545,8 @@ export function generateLangleyLiveSessions(
     for (const tpl of templates) {
       if (!tpl.days.includes(dow)) continue;
       const startTime = fromZonedTime(`${ymd}T${tpl.start}:00`, TIMEZONE);
-      if (startTime < window.from || startTime >= window.to) continue;
       const endTime = new Date(startTime.getTime() + tpl.minutes * 60_000);
+      if (endTime <= window.from || startTime >= window.to) continue;
 
       const notes = sanitizeSessionNotes(tpl.notes);
       const requirements = extractSessionRequirements(tpl.notes, tpl.title);

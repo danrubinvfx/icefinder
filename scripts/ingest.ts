@@ -25,7 +25,7 @@ import {
   getNewWestminsterUrl,
   getLangleyUrl,
 } from "../src/lib/links";
-import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
+import { extractSessionRequirements, normalizeCategory, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
 import { fetchLangleySessions, upsertLangleySessions } from "../src/lib/ingest/activenet";
 import { checkAndDispatchAlerts, type TransitionedSession } from "../src/lib/alerts/dispatcher";
@@ -151,18 +151,23 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
     const derivedReqs = extractSessionRequirements(cleanNotes, s.rawTitle);
     const mergedReqs = Array.from(new Set([...(s.requirements ?? []), ...derivedReqs]));
 
+    const targetCat = normalizeCategory(s.rawTitle);
+    const cleanCat = targetCat ?? s.category;
+    const needsCatUpdate = targetCat !== null && s.category !== targetCat;
+
     const needsUrlUpdate = s.bookingUrl !== cleanUrl;
     const needsNotesUpdate = (s.notes ?? null) !== cleanNotes;
     const needsReqsUpdate =
       JSON.stringify(s.requirements ?? []) !== JSON.stringify(mergedReqs);
 
-    if (needsUrlUpdate || needsNotesUpdate || needsReqsUpdate) {
+    if (needsUrlUpdate || needsNotesUpdate || needsReqsUpdate || needsCatUpdate) {
       await prismaClient.iceSession.update({
         where: { id: s.id },
         data: {
           bookingUrl: cleanUrl,
           notes: cleanNotes,
           requirements: mergedReqs,
+          category: cleanCat,
         },
       });
       updatedCount++;

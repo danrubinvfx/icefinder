@@ -44,6 +44,9 @@ function getRequirementBadgeStyle(req: string): string {
   if (req === "Coquitlam Skate Club" || req === "Coaches Free") {
     return "bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200 font-semibold";
   }
+  if (req === "Lap Skate / Conditioning") {
+    return "bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200 font-semibold";
+  }
   return "bg-amber-50/90 text-amber-900 ring-1 ring-amber-200/90 font-semibold";
 }
 
@@ -61,7 +64,11 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
 
   const isSpecial = isSpecialSession(session);
   const isWalkIn =
-    session.category === "public_skate" || Boolean(session.is_walkin) || session.source === "schedule";
+    session.category === "public_skate" ||
+    Boolean(session.is_walkin) ||
+    session.source === "schedule" ||
+    (session.requirements && session.requirements.includes("Lap Skate / Conditioning")) ||
+    /lap\s*skat/i.test(session.rawTitle);
   const isReservable =
     !isWalkIn &&
     (session.category === "hockey_dropin" ||

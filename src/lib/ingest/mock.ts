@@ -204,7 +204,10 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
     { title: "Family Skate", days: [6, 0], start: "14:00", minutes: 120, capacity: 250, rink: "Rink 1", cost: 6.4 },
   ],
   "bill-copeland": [
+    { title: "Lap Skate", days: [1], start: "09:30", minutes: 120, capacity: 220, cost: 6.4, notes: "8 yrs+, Walk-in" },
+    { title: "Toonie Skate", days: [1], start: "11:45", minutes: 90, capacity: 250, cost: 2, notes: "All ages, Walk-in" },
     { title: "Leisure Skate", days: [1, 3], start: "12:00", minutes: 90, capacity: 220, cost: 6.4 },
+    { title: "Lap Skate", days: [4], start: "09:00", minutes: 60, capacity: 220, cost: 6.4, notes: "8 yrs+, Walk-in" },
     { title: "Everyone Welcome Skate", days: [6], start: "19:30", minutes: 120, capacity: 250, cost: 6.4 },
   ],
 
@@ -383,8 +386,8 @@ function expand(
       const category = normalizeCategory(tpl.title);
       if (!category || isGoalieListing(tpl.title)) continue;
       const startTime = fromZonedTime(`${ymd}T${tpl.start}:00`, TIMEZONE);
-      if (startTime < window.from || startTime >= window.to) continue;
       const endTime = new Date(startTime.getTime() + tpl.minutes * 60_000);
+      if (endTime <= window.from || startTime >= window.to) continue;
       const key = sessionKey(facility.slug, startTime, category);
 
       let openSpots = tpl.capacity;

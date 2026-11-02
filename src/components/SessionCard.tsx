@@ -95,6 +95,9 @@ function getRequirementBadgeStyle(req: string): string {
   if (req === "Coquitlam Skate Club" || req === "Coaches Free") {
     return "bg-indigo-50 text-indigo-800 ring-1 ring-indigo-200 font-semibold";
   }
+  if (req === "Lap Skate / Conditioning") {
+    return "bg-cyan-50 text-cyan-800 ring-1 ring-cyan-200 font-semibold";
+  }
   return "bg-amber-50/90 text-amber-900 ring-1 ring-amber-200/90 font-semibold";
 }
 
@@ -109,7 +112,12 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
       </span>
     );
   }
-  const isWalkIn = s.category === "public_skate" || Boolean(s.is_walkin) || s.source === "schedule";
+  const isWalkIn =
+    s.category === "public_skate" ||
+    Boolean(s.is_walkin) ||
+    s.source === "schedule" ||
+    (s.requirements && s.requirements.includes("Lap Skate / Conditioning")) ||
+    /lap\s*skat/i.test(s.rawTitle);
   if (isWalkIn) {
     return (
       <span
@@ -150,7 +158,12 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const style = CATEGORY_STYLE[s.category];
   const isSpecial = isSpecialSession(s);
-  const isWalkIn = s.category === "public_skate" || Boolean(s.is_walkin) || s.source === "schedule";
+  const isWalkIn =
+    s.category === "public_skate" ||
+    Boolean(s.is_walkin) ||
+    s.source === "schedule" ||
+    (s.requirements && s.requirements.includes("Lap Skate / Conditioning")) ||
+    /lap\s*skat/i.test(s.rawTitle);
   const isReservable =
     !isWalkIn &&
     (s.category === "hockey_dropin" ||

@@ -73,6 +73,7 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
     // Combine mock drop-ins with published public skate timetable
     const combined = [...mock, ...schedule];
     for (const s of combined) {
+      if (s.endTime.getTime() <= now) continue;
       const fac = facilityLookup.get(s.facilitySlug) ?? facility;
       sessions.push({
         id: sessionKey(s.facilitySlug, s.startTime, s.category),
@@ -111,7 +112,9 @@ export function getFallbackFeed(now = Date.now()): FeedPayload {
             s.source === "schedule" ||
             s.source === "special_schedule" ||
             s.source === "schedule_footer" ||
-            (s.facilitySlug === "poirier" && s.category === "figure_buyon")),
+            (s.facilitySlug === "poirier" && s.category === "figure_buyon") ||
+            (s.requirements && s.requirements.includes("Lap Skate / Conditioning")) ||
+            /lap\s*skat/i.test(s.rawTitle)),
         activityId: s.activityId ?? null,
         externalId: s.externalId ?? null,
         external_id: s.externalId ?? null,
@@ -210,7 +213,9 @@ export async function getFeed(): Promise<FeedPayload> {
             r.source === "schedule" ||
             r.source === "special_schedule" ||
             r.source === "schedule_footer" ||
-            (r.facility.slug === "poirier" && r.category === "figure_buyon"),
+            (r.facility.slug === "poirier" && r.category === "figure_buyon") ||
+            (r.requirements && r.requirements.includes("Lap Skate / Conditioning")) ||
+            /lap\s*skat/i.test(r.rawTitle),
           activityId: r.activityId ?? null,
           externalId: r.externalId,
           external_id: r.externalId,

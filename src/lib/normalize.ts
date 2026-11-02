@@ -30,6 +30,9 @@ export function normalizeCategory(rawTitle: string): Category | null {
   if (/discount\s+(public\s+)?skate/.test(t)) {
     return "public_skate";
   }
+  if (/\blap\s*skat/i.test(t)) {
+    return "public_skate";
+  }
 
   // Exclusions first: lessons, programs, leagues, private rentals, and non-target sports.
   if (
@@ -151,6 +154,11 @@ export function extractSessionRequirements(
   // 0. Women+ / gender diverse adult tag
   if (/britannia\s+arena\s*-\s*women\s*\+|women\s*\+|women\s*and\s*gender\s*diverse/i.test(combined)) {
     add("Women+ / 19+");
+  }
+
+  // Lap Skate / Conditioning tag
+  if (/\blap\s*skat/i.test(combined)) {
+    add("Lap Skate / Conditioning");
   }
 
   // 1. Skate type restrictions
