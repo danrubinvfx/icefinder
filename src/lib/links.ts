@@ -421,7 +421,7 @@ export function getLangleyUrl(opts: {
     ? String(opts.activityId).replace(/^activenet:/i, "").replace(/\D/g, "")
     : null;
   if (cleanId) return getLangleyDetailUrl(cleanId);
-  return getLangleyCategoryUrl(opts.category ?? undefined);
+  return LANGLEY_SEARCH_FALLBACK;
 }
 
 // ── Planet Ice (DaySmart) ────────────────────────────────────────────────
@@ -605,7 +605,7 @@ export function resolveBookingUrl(opts: {
     if (rawId) {
       return getLangleyDetailUrl(rawId);
     }
-    return getLangleyCategoryUrl(category);
+    return LANGLEY_SEARCH_FALLBACK;
   }
 
   // 11. Burnaby (ActiveNet)

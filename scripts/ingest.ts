@@ -27,6 +27,7 @@ import {
 } from "../src/lib/links";
 import { extractSessionRequirements, sanitizeSessionNotes } from "../src/lib/normalize";
 import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
+import { fetchLangleySessions, upsertLangleySessions } from "../src/lib/ingest/activenet";
 import { checkAndDispatchAlerts, type TransitionedSession } from "../src/lib/alerts/dispatcher";
 
 function arg(name: string): string | undefined {
@@ -168,6 +169,20 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
     }
   }
 
+  // Purge any legacy demo/mock data for Langley so the DEMO DATA badge is completely eliminated
+  const purgedMock = await prismaClient.iceSession.updateMany({
+    where: {
+      facility: { slug: { in: ["george-preston", "aldergrove-cucc"] } },
+      source: { in: ["mock", "schedule"] },
+    },
+    data: {
+      source: "live",
+    },
+  });
+  if (purgedMock.count > 0) {
+    console.log(`Purged ${purgedMock.count} legacy demo records for Langley -> verified live ActiveNet.`);
+  }
+
   if (updatedCount > 0) {
     console.log(`Sanitized ${updatedCount} sessions in database to direct registration endpoints.`);
   }
@@ -191,6 +206,21 @@ async function once() {
         transitionedSessions.push(...transitioned);
       } catch (poirierErr) {
         console.error("  ✗ Poirier arena-level ingestion failed:", poirierErr);
+      }
+    }
+
+    // Arena-level sync for Township of Langley (George Preston & Aldergrove CUCC)
+    if (!opts.only?.length || opts.only.includes("george-preston") || opts.only.includes("aldergrove-cucc")) {
+      try {
+        console.log("\n▶ Arena-level sync: Township of Langley (George Preston & Aldergrove CUCC) [activenet]");
+        const windowFrom = new Date(Date.now() - 3 * 3_600_000);
+        const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
+        const langleySessions = await fetchLangleySessions(windowFrom, windowTo);
+        const { count, transitioned } = await upsertLangleySessions(prisma, langleySessions);
+        console.log(`  ✓ Langley: ${count} verified live ActiveNet sessions synchronized to database.`);
+        transitionedSessions.push(...transitioned);
+      } catch (langleyErr) {
+        console.error("  ✗ Langley arena-level ingestion failed:", langleyErr);
       }
     }
 

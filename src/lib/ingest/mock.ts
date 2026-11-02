@@ -17,6 +17,7 @@ import {
 } from "../normalize";
 import { resolveBookingUrl } from "../links";
 import { generatePoirierTimetable } from "./poirier";
+import { generateLangleyLiveSessions } from "./activenet";
 import type { IngestWindow, NormalizedSession } from "./types";
 
 interface Template {
@@ -429,6 +430,9 @@ export function mockSessionsFor(facility: FacilitySeed, window: IngestWindow): N
   if (facility.slug === "poirier") {
     return generatePoirierTimetable(window.from, window.to);
   }
+  if (facility.municipality === "Langley" || facility.slug === "george-preston" || facility.slug === "aldergrove-cucc") {
+    return generateLangleyLiveSessions(facility.slug as "george-preston" | "aldergrove-cucc", window);
+  }
   const tpls = MOCK_TEMPLATES[facility.slug] ?? [
     { title: "Public Skate", days: [6, 0], start: "13:30", minutes: 90, capacity: 150, cost: 7 },
     { title: "Stick & Puck", days: [2, 4], start: "12:00", minutes: 75, capacity: 20, cost: 8 },
@@ -438,7 +442,7 @@ export function mockSessionsFor(facility: FacilitySeed, window: IngestWindow): N
 }
 
 export function publicSkateScheduleFor(facility: FacilitySeed, window: IngestWindow): NormalizedSession[] {
-  if (facility.slug === "poirier") {
+  if (facility.slug === "poirier" || facility.municipality === "Langley" || facility.slug === "george-preston" || facility.slug === "aldergrove-cucc") {
     return [];
   }
   const tpls = PUBLIC_SKATE_SCHEDULE[facility.slug] ?? [];

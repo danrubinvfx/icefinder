@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { runIngestion } from "@/lib/ingest/engine";
 import { fetchPoirierSessions, upsertPoirierSessions } from "@/lib/ingest/poirier";
+import { fetchLangleySessions, upsertLangleySessions } from "@/lib/ingest/activenet";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -40,6 +41,16 @@ async function handle(req: NextRequest) {
       await upsertPoirierSessions(prisma, poirierSessions);
     } catch (poirierErr) {
       console.error("[IceFinder] Poirier arena sync error:", poirierErr);
+    }
+
+    // Isolated arena-level sync for Township of Langley (George Preston & Aldergrove CUCC) [activenet]
+    try {
+      const windowFrom = new Date(Date.now() - 3 * 3_600_000);
+      const windowTo = new Date(Date.now() + 8 * 86_400_000);
+      const langleySessions = await fetchLangleySessions(windowFrom, windowTo);
+      await upsertLangleySessions(prisma, langleySessions);
+    } catch (langleyErr) {
+      console.error("[IceFinder] Langley arena sync error:", langleyErr);
     }
 
     return NextResponse.json(report, {

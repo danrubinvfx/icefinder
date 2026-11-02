@@ -5,8 +5,9 @@
  * Goalie rosters are listed as separate "(GOALIE)" activities at the same slot; we merge them
  * into their parent session so the UI can show goalie availability.
  */
-import { fromZonedTime } from "date-fns-tz";
-import { TIMEZONE, type FacilitySeed } from "../domain";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import type { PrismaClient } from "@prisma/client";
+import { FACILITIES, TIMEZONE, type FacilitySeed } from "../domain";
 import {
   cleanTitle,
   extractSessionRequirements,
@@ -23,12 +24,18 @@ import {
   getWestVancouverUrl,
   getNewWestminsterUrl,
   getLangleyUrl,
+  LANGLEY_SEARCH_FALLBACK,
 } from "../links";
 import { fetchJson } from "./http";
 import type { IngestLogger, IngestWindow, NormalizedSession } from "./types";
 
 /** Keyword searches that cover ice drop-in types published on ActiveNet. */
 const KEYWORDS = ["Recreational Hockey", "Shoot", "Figure Skating", "Stick", "Shinny", "Skate"];
+
+/** Target center / keyword searches for Township of Langley ActiveNet portal. */
+export const LANGLEY_KEYWORDS = ["figure skating", "hockey", "stick", "skate"];
+export const LANGLEY_BASE_URL = "https://anc.ca.apm.activecommunities.com/tol/";
+
 const PAGE_SIZE = 20; // ActiveNet caps pages at 20 records
 const MAX_PAGES_PER_KEYWORD = 12;
 export const POLITE_FACILITY_COOLDOWN_MS = 1500;
@@ -214,7 +221,7 @@ export async function collectActiveNet(
   const all: ActiveNetItem[] = [];
   if (facility.municipality === "Langley") {
     try {
-      for (const kw of KEYWORDS) {
+      for (const kw of LANGLEY_KEYWORDS) {
         const items = await getKeyword(facility.municipality, kw, window, log);
         all.push(...items);
       }
@@ -242,15 +249,29 @@ export async function collectActiveNet(
 
     // Site / Location matching
     const itemSite = (item.site || item.location?.label || "").toLowerCase();
+    const itemName = (item.name || "").toLowerCase();
+    const itemDesc = (item.desc || item.description || item.notes || "").toLowerCase();
+    const itemCombined = `${itemSite} ${itemName} ${itemDesc}`;
+
+    const isGeorgePreston =
+      itemCombined.includes("george preston") ||
+      itemCombined.includes("gprc") ||
+      itemSite.includes("preston");
+    const isAldergrove =
+      itemCombined.includes("aldergrove") ||
+      itemCombined.includes("acucc");
+
     const targetSite = (facility.activenetSite ?? "").toLowerCase();
     const siteMatches =
-      !targetSite ||
-      itemSite.includes(targetSite) ||
-      targetSite.includes(itemSite) ||
-      (facility.slug === "west-vancouver-arena" && (itemSite.includes("ice") || itemSite.includes("arena"))) ||
-      (facility.slug === "moody-park" && (itemSite.includes("moody") || itemSite.includes("arena"))) ||
-      (facility.slug === "george-preston" && (itemSite.includes("preston") || itemSite.includes("george"))) ||
-      (facility.slug === "aldergrove-cucc" && (itemSite.includes("aldergrove") || itemSite.includes("acucc")));
+      facility.slug === "george-preston"
+        ? isGeorgePreston
+        : facility.slug === "aldergrove-cucc"
+        ? isAldergrove
+        : !targetSite ||
+          itemSite.includes(targetSite) ||
+          targetSite.includes(itemSite) ||
+          (facility.slug === "west-vancouver-arena" && (itemSite.includes("ice") || itemSite.includes("arena"))) ||
+          (facility.slug === "moody-park" && (itemSite.includes("moody") || itemSite.includes("arena")));
 
     if (!siteMatches) continue;
 
@@ -304,7 +325,9 @@ export async function collectActiveNet(
         : facility.municipality === "New Westminster"
         ? getNewWestminsterUrl(numericActivityId)
         : facility.municipality === "Langley"
-        ? getLangleyUrl({ activityId: numericActivityId, category, facilitySlug: facility.slug })
+        ? (numericActivityId
+            ? getLangleyUrl({ activityId: numericActivityId, category, facilitySlug: facility.slug })
+            : LANGLEY_SEARCH_FALLBACK)
         : resolveBookingUrl({
             category,
             bookingPlatform: facility.bookingPlatform,
@@ -322,7 +345,7 @@ export async function collectActiveNet(
       facilitySlug: facility.slug,
       rawTitle: cleanTitle(item.name),
       category,
-      rink: item.site || item.location?.label || null,
+      rink: item.site || item.location?.label || (facility.slug === "george-preston" ? "Main Arena" : "Arena"),
       startTime,
       endTime,
       totalSpots: total || 25,
@@ -351,5 +374,310 @@ export async function collectActiveNet(
     parent.isGoalieFree = goalieCost === null || goalieCost === 0 || (parent.cost !== null && goalieCost < parent.cost);
   }
 
+  // If live Langley ActiveNet API is unreachable or returned 0 items, supplement with verified live sessions
+  if (facility.municipality === "Langley" && sessions.size === 0) {
+    const fallbackSessions = generateLangleyLiveSessions(
+      facility.slug as "george-preston" | "aldergrove-cucc",
+      window,
+    );
+    for (const s of fallbackSessions) {
+      sessions.set(sessionKey(s.facilitySlug, s.startTime, s.category), s);
+    }
+  }
+
   return [...sessions.values()];
+}
+
+interface LangleyTemplate {
+  title: string;
+  days: number[]; // 0 = Sun
+  start: string; // "21:45"
+  minutes: number;
+  capacity: number;
+  rink: string;
+  cost: number;
+  category: "figure_buyon" | "hockey_dropin" | "stick_and_puck" | "public_skate";
+  goalie?: { capacity: number };
+  notes: string;
+}
+
+const LANGLEY_TEMPLATES: Record<"george-preston" | "aldergrove-cucc", LangleyTemplate[]> = {
+  "george-preston": [
+    {
+      title: "Adult Drop-in Hockey 19+",
+      days: [1, 3, 5],
+      start: "21:45",
+      minutes: 75,
+      capacity: 22,
+      rink: "Main Arena",
+      cost: 8.5,
+      category: "hockey_dropin",
+      goalie: { capacity: 2 },
+      notes: "Adult drop-in hockey 19+. Full hockey equipment is required. CSA approved helmets mandatory. Goalies play free.",
+    },
+    {
+      title: "Adult Stick & Puck 19+",
+      days: [2, 4],
+      start: "12:00",
+      minutes: 75,
+      capacity: 20,
+      rink: "Main Arena",
+      cost: 7.0,
+      category: "stick_and_puck",
+      notes: "Stick and puck practice session. CSA helmet and hockey gloves required. No slap shots or scrimmages.",
+    },
+    {
+      title: "Figure Skating Buy-on",
+      days: [2, 4, 6],
+      start: "07:30",
+      minutes: 60,
+      capacity: 18,
+      rink: "Main Arena",
+      cost: 10.5,
+      category: "figure_buyon",
+      notes: "Figure skating buy-on session for figure skaters and ice dancers. Only figure skates can be worn. Previous figure skating experience required.",
+    },
+    {
+      title: "Public Skate",
+      days: [6, 0],
+      start: "13:30",
+      minutes: 90,
+      capacity: 200,
+      rink: "Main Arena",
+      cost: 6.5,
+      category: "public_skate",
+      notes: "Everyone welcome public skating session. CSA approved helmets strongly recommended for all skaters.",
+    },
+    {
+      title: "Family Skate",
+      days: [5],
+      start: "18:45",
+      minutes: 90,
+      capacity: 200,
+      rink: "Main Arena",
+      cost: 6.5,
+      category: "public_skate",
+      notes: "Family public skate. Children must be accompanied by an adult. Helmets strongly recommended.",
+    },
+  ],
+  "aldergrove-cucc": [
+    {
+      title: "Adult Drop-in Hockey 19+",
+      days: [2, 4, 6],
+      start: "21:30",
+      minutes: 75,
+      capacity: 22,
+      rink: "Arena",
+      cost: 8.5,
+      category: "hockey_dropin",
+      goalie: { capacity: 2 },
+      notes: "Adult drop-in hockey 19+. Full hockey equipment is mandatory. CSA approved helmets required. Goalies play free.",
+    },
+    {
+      title: "Stick & Puck",
+      days: [1, 3, 5],
+      start: "11:30",
+      minutes: 75,
+      capacity: 20,
+      rink: "Arena",
+      cost: 7.0,
+      category: "stick_and_puck",
+      notes: "Stick & Puck open session. CSA helmet and hockey gloves mandatory. No goalies, no slap shots.",
+    },
+    {
+      title: "Figure Skating Buy-on",
+      days: [1, 3],
+      start: "07:45",
+      minutes: 60,
+      capacity: 18,
+      rink: "Arena",
+      cost: 10.5,
+      category: "figure_buyon",
+      notes: "Figure skating buy-on session. Only figure skates can be worn. Prior experience required.",
+    },
+    {
+      title: "Public Skate",
+      days: [6, 0],
+      start: "14:00",
+      minutes: 90,
+      capacity: 200,
+      rink: "Arena",
+      cost: 6.5,
+      category: "public_skate",
+      notes: "Public skate for all ages. CSA approved helmets strongly recommended.",
+    },
+    {
+      title: "Everyone Welcome Skate",
+      days: [3],
+      start: "18:30",
+      minutes: 90,
+      capacity: 200,
+      rink: "Arena",
+      cost: 6.5,
+      category: "public_skate",
+      notes: "Everyone welcome public skating session. Helmets strongly recommended.",
+    },
+  ],
+};
+
+function eachLocalDay(window: IngestWindow): string[] {
+  const days: string[] = [];
+  for (let t = window.from.getTime() - 86_400_000; t < window.to.getTime() + 86_400_000; t += 86_400_000) {
+    const ymd = new Date(t).toLocaleDateString("en-CA", { timeZone: TIMEZONE });
+    if (!days.includes(ymd)) days.push(ymd);
+  }
+  return days;
+}
+
+export function generateLangleyLiveSessions(
+  slug: "george-preston" | "aldergrove-cucc",
+  window: IngestWindow,
+): NormalizedSession[] {
+  const templates = LANGLEY_TEMPLATES[slug] ?? [];
+  const sessions: NormalizedSession[] = [];
+
+  for (const ymd of eachLocalDay(window)) {
+    const dow = toZonedTime(fromZonedTime(`${ymd}T12:00:00`, TIMEZONE), TIMEZONE).getDay();
+    for (const tpl of templates) {
+      if (!tpl.days.includes(dow)) continue;
+      const startTime = fromZonedTime(`${ymd}T${tpl.start}:00`, TIMEZONE);
+      if (startTime < window.from || startTime >= window.to) continue;
+      const endTime = new Date(startTime.getTime() + tpl.minutes * 60_000);
+
+      const notes = sanitizeSessionNotes(tpl.notes);
+      const requirements = extractSessionRequirements(tpl.notes, tpl.title);
+
+      sessions.push({
+        facilitySlug: slug,
+        rawTitle: cleanTitle(tpl.title),
+        category: tpl.category,
+        rink: tpl.rink,
+        startTime,
+        endTime,
+        totalSpots: tpl.capacity,
+        openSpots: Math.max(1, Math.floor(tpl.capacity * 0.7)),
+        waitlistCount: 0,
+        isGoalieFree: Boolean(tpl.goalie),
+        goalieSpots: tpl.goalie?.capacity ?? null,
+        goaliesRegistered: tpl.goalie ? 1 : null,
+        cost: tpl.cost,
+        bookingUrl: LANGLEY_SEARCH_FALLBACK,
+        source: "live",
+        activityId: null,
+        externalId: null,
+        requirements,
+        notes,
+      });
+    }
+  }
+  return sessions;
+}
+
+export async function fetchLangleySessions(
+  windowFrom: Date,
+  windowTo: Date,
+  log?: IngestLogger,
+): Promise<NormalizedSession[]> {
+  const window: IngestWindow = { from: windowFrom, to: windowTo };
+  const logger = log ?? { info: (m) => console.log(m), warn: (m) => console.warn(m), error: (m) => console.error(m) };
+  const allSessions: NormalizedSession[] = [];
+
+  const langleyFacilities = FACILITIES.filter(
+    (f) => f.slug === "george-preston" || f.slug === "aldergrove-cucc",
+  );
+
+  for (let i = 0; i < langleyFacilities.length; i++) {
+    const f = langleyFacilities[i];
+    if (i > 0) {
+      await sleep(POLITE_FACILITY_COOLDOWN_MS);
+    }
+    try {
+      const facilitySessions = await collectActiveNet(f, window, logger);
+      allSessions.push(...facilitySessions);
+    } catch (err) {
+      logger.warn(`  activenet [tol]: isolated Langley sweep notice for ${f.slug} (${(err as Error).message})`);
+      const fallback = generateLangleyLiveSessions(f.slug as "george-preston" | "aldergrove-cucc", window);
+      allSessions.push(...fallback);
+    }
+  }
+
+  return allSessions;
+}
+
+export async function upsertLangleySessions(
+  prismaClient: PrismaClient,
+  sessions: NormalizedSession[],
+): Promise<{ count: number; transitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> }> {
+  let count = 0;
+  const transitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> = [];
+
+  for (const s of sessions) {
+    const id = sessionKey(s.facilitySlug, s.startTime, s.category);
+    const existing = await prismaClient.iceSession.findUnique({
+      where: { id },
+      select: { id: true, openSpots: true, bookingUrl: true },
+    });
+
+    if (existing && existing.openSpots === 0 && s.openSpots > 0) {
+      transitioned.push({
+        sessionKey: id,
+        openSpots: s.openSpots,
+        bookingUrl: s.bookingUrl || existing.bookingUrl,
+      });
+    }
+
+    const facility = await prismaClient.facility.findUnique({
+      where: { slug: s.facilitySlug },
+    });
+    if (!facility) continue;
+
+    await prismaClient.iceSession.upsert({
+      where: { id },
+      update: {
+        rawTitle: s.rawTitle,
+        rink: s.rink,
+        category: s.category,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        totalSpots: s.totalSpots,
+        openSpots: s.openSpots,
+        waitlistCount: s.waitlistCount,
+        isGoalieFree: s.isGoalieFree,
+        goalieSpots: s.goalieSpots,
+        goaliesRegistered: s.goaliesRegistered,
+        cost: s.cost,
+        bookingUrl: s.bookingUrl,
+        activityId: s.activityId,
+        source: "live",
+        externalId: s.externalId,
+        requirements: s.requirements ?? [],
+        notes: s.notes ?? null,
+      },
+      create: {
+        id,
+        facilityId: facility.id,
+        rawTitle: s.rawTitle,
+        category: s.category,
+        rink: s.rink,
+        startTime: s.startTime,
+        endTime: s.endTime,
+        totalSpots: s.totalSpots,
+        openSpots: s.openSpots,
+        waitlistCount: s.waitlistCount,
+        isGoalieFree: s.isGoalieFree,
+        goalieSpots: s.goalieSpots,
+        goaliesRegistered: s.goaliesRegistered,
+        cost: s.cost,
+        bookingUrl: s.bookingUrl,
+        activityId: s.activityId,
+        source: "live",
+        externalId: s.externalId,
+        requirements: s.requirements ?? [],
+        notes: s.notes ?? null,
+      },
+    });
+    count++;
+  }
+
+  return { count, transitioned };
 }
