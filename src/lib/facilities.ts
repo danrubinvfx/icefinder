@@ -176,3 +176,42 @@ export function getFacilityPhone(slug?: string | null): string | undefined {
 export function getFacilityScheduleUrl(slug?: string | null): string | undefined {
   return getFacilityContact(slug)?.scheduleUrl;
 }
+
+export const FACILITY_SHEETS: Record<string, number> = {
+  'rosemary-brown': 2,
+  'kensington': 1,
+  'bill-copeland': 1,
+  'scotia-barn': 6,
+  'poirier': 3,
+  'sungod': 1,
+  'north-delta': 1,
+  'south-delta': 1,
+  'tilbury': 2,
+  'harry-jerome': 1,
+  'karen-magnussen': 1,
+  'richmond-ice-centre': 6,
+  'minoru': 2,
+  'britannia': 1,
+  'hillcrest': 1,
+  'kitsilano': 1,
+  'trout-lake': 1,
+  'sunset': 1,
+  'killarney': 1,
+  'west-vancouver-arena': 1,
+  'moody-park': 1,
+  'george-preston': 1,
+  'aldergrove-cucc': 1,
+  'north-surrey': 3,
+  'surrey-sport-leisure': 3,
+  'cloverdale-ice': 2,
+  'south-surrey': 1,
+  'newton-arena': 1,
+  'planet-ice-coquitlam': 4,
+  'planet-ice-delta': 4,
+  'planet-ice-maple-ridge': 2,
+};
+
+export function getFacilitySheets(slug?: string | null): number | undefined {
+  if (!slug) return undefined;
+  return FACILITY_SHEETS[slug];
+}

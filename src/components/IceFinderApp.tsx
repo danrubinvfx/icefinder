@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2 } from "lucide-react";
+import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2, Phone, Layers, ExternalLink } from "lucide-react";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -96,10 +96,22 @@ function Toggle({
   );
 }
 
+export interface FacilityHeaderInfo {
+  name: string;
+  address: string;
+  phone: string;
+  sheets?: number;
+  scheduleUrl?: string;
+  municipality: string;
+}
+
 interface IceFinderAppProps {
   initialFeed: FeedPayload;
   initialMunicipality?: Municipality;
   initialCategory?: CategoryFilter;
+  initialFacility?: string;
+  initialDateMode?: DateMode;
+  facilityInfo?: FacilityHeaderInfo;
   seoTitle?: string;
   seoDescription?: string;
 }
@@ -108,6 +120,9 @@ export function IceFinderApp({
   initialFeed,
   initialMunicipality,
   initialCategory,
+  initialFacility,
+  initialDateMode,
+  facilityInfo,
   seoTitle,
   seoDescription,
 }: IceFinderAppProps) {
@@ -119,12 +134,12 @@ export function IceFinderApp({
   const [municipality, setMunicipality] = useState<Municipality>(
     initialMunicipality ?? "All Metro Van",
   );
-  const [dateMode, setDateMode] = useState<DateMode>("today");
+  const [dateMode, setDateMode] = useState<DateMode>(initialDateMode ?? "today");
   const [pickedDate, setPickedDate] = useState<string>("");
   const [category, setCategory] = useState<CategoryFilter>(initialCategory ?? "all");
   const [openOnly, setOpenOnly] = useState(false);
   const [goalieOnly, setGoalieOnly] = useState(false);
-  const [facility, setFacility] = useState<string>("all");
+  const [facility, setFacility] = useState<string>(initialFacility ?? "all");
   const dateInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
@@ -345,11 +360,11 @@ export function IceFinderApp({
       : "Pick Date";
 
   const resetFilters = () => {
-    setMunicipality("All Metro Van");
-    setCategory("all");
+    setMunicipality(initialMunicipality ?? "All Metro Van");
+    setCategory(initialCategory ?? "all");
     setOpenOnly(false);
     setGoalieOnly(false);
-    setFacility("all");
+    setFacility(initialFacility ?? "all");
   };
 
   const scrollToDay = (day: string) => {
@@ -542,16 +557,73 @@ export function IceFinderApp({
 
       {/* ── Feed ─────────────────────────────────────────────── */}
       <main className="space-y-6 px-4 pt-4">
-        {/* SEO Header */}
-        <header className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
-            {seoTitle ?? "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots)"}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600">
-            {seoDescription ??
-              "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly."}
-          </p>
-        </header>
+        {/* SEO Header or Facility Details Header */}
+        {facilityInfo ? (
+          <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-ice-50 px-2.5 py-0.5 text-xs font-semibold text-ice-700 ring-1 ring-ice-600/20">
+                    {facilityInfo.municipality}
+                  </span>
+                  {facilityInfo.sheets !== undefined && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      <Layers className="size-3.5 text-slate-500" aria-hidden />
+                      {facilityInfo.sheets} {facilityInfo.sheets === 1 ? "Ice Sheet" : "Ice Sheets"}
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+                  {seoTitle ?? `${facilityInfo.name} Ice Schedule`}
+                </h1>
+                <p className="flex items-center gap-1.5 text-xs sm:text-sm text-slate-600">
+                  <MapPin className="size-4 shrink-0 text-slate-400" aria-hidden />
+                  <span>{facilityInfo.address}</span>
+                </p>
+              </div>
+
+              {/* Action buttons: Tap-to-call & Official Schedule */}
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {facilityInfo.phone && (
+                  <a
+                    href={`tel:${facilityInfo.phone.replace(/[^0-9+]/g, "")}`}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-ice-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs hover:bg-ice-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500"
+                    aria-label={`Call ${facilityInfo.name} at ${facilityInfo.phone}`}
+                  >
+                    <Phone className="size-3.5" aria-hidden />
+                    <span>Call Arena ({facilityInfo.phone})</span>
+                  </a>
+                )}
+                {facilityInfo.scheduleUrl && (
+                  <a
+                    href={facilityInfo.scheduleUrl}
+                    target={facilityInfo.scheduleUrl.startsWith("http") ? "_blank" : undefined}
+                    rel={facilityInfo.scheduleUrl.startsWith("http") ? "noopener noreferrer" : undefined}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-200 transition"
+                  >
+                    <ExternalLink className="size-3.5 text-slate-500" aria-hidden />
+                    <span>Official Schedule</span>
+                  </a>
+                )}
+              </div>
+            </div>
+            {seoDescription && (
+              <p className="border-t border-slate-100 pt-3 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                {seoDescription}
+              </p>
+            )}
+          </header>
+        ) : (
+          <header className="space-y-1">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+              {seoTitle ?? "Metro Vancouver Ice Times & Drop-In Tracker (Live Spots)"}
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600">
+              {seoDescription ??
+                "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly."}
+            </p>
+          </header>
+        )}
 
         {/* Quick Day-Selector Ribbon for 7-Day / Multi-Day View */}
         {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (

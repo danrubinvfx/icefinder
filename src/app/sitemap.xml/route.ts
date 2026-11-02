@@ -1,3 +1,5 @@
+import { FACILITY_CONTACTS } from "@/lib/facilities";
+
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -16,6 +18,11 @@ export async function GET() {
     { loc: "https://www.icefinder.ca/delta", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/maple-ridge", priority: "0.8", changefreq: "hourly" },
     { loc: "https://www.icefinder.ca/schedules/coquitlam-poirier", priority: "0.7", changefreq: "daily" },
+    ...Object.keys(FACILITY_CONTACTS).map((slug) => ({
+      loc: `https://www.icefinder.ca/rinks/${slug}`,
+      priority: "0.8",
+      changefreq: "hourly",
+    })),
   ];
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>

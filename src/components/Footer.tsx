@@ -49,6 +49,40 @@ export function Footer() {
             Maple Ridge
           </Link>
         </div>
+        <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs text-slate-600 font-medium">
+          <span className="text-slate-500">Popular Arenas:</span>
+          <Link href="/rinks/rosemary-brown" className="hover:text-ice-600 underline underline-offset-2">
+            Rosemary Brown
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/bill-copeland" className="hover:text-ice-600 underline underline-offset-2">
+            Bill Copeland
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/scotia-barn" className="hover:text-ice-600 underline underline-offset-2">
+            Scotia Barn
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/richmond-ice-centre" className="hover:text-ice-600 underline underline-offset-2">
+            Richmond Ice Centre
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/minoru" className="hover:text-ice-600 underline underline-offset-2">
+            Minoru Arenas
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/poirier" className="hover:text-ice-600 underline underline-offset-2">
+            Poirier Complex
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/hillcrest" className="hover:text-ice-600 underline underline-offset-2">
+            Hillcrest Rink
+          </Link>
+          <span>·</span>
+          <Link href="/rinks/kitsilano" className="hover:text-ice-600 underline underline-offset-2">
+            Kitsilano Rink
+          </Link>
+        </div>
         <p className="text-slate-500">
           Schedules and spot availability are synced periodically from municipal recreation
           portals. Times, capacity, and holiday hours are subject to change. Please confirm
