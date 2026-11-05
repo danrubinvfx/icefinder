@@ -412,7 +412,7 @@ export const FACILITIES: FacilitySeed[] = [
     activenetSite: "Moody Park Arena",
   },
 
-  // ── Langley (ActiveNet) ─────────────────────────────────────────────────
+  // ── Langley (Township of Langley / PerfectMind) ─────────────────────────
   {
     slug: "george-preston",
     name: "George Preston Recreation Centre",
@@ -421,9 +421,8 @@ export const FACILITIES: FacilitySeed[] = [
     address: "20699 42 Ave, Langley, BC V3A 5A9",
     lat: 49.0789,
     lng: -122.6517,
-    bookingPlatform: "activenet",
+    bookingPlatform: "perfectmind",
     sheets: 1,
-    activenetSite: "George Preston",
   },
   {
     slug: "aldergrove-cucc",
@@ -433,9 +432,8 @@ export const FACILITIES: FacilitySeed[] = [
     address: "27032 Fraser Hwy, Aldergrove, BC V4W 3P6",
     lat: 49.0579,
     lng: -122.4749,
-    bookingPlatform: "activenet",
+    bookingPlatform: "perfectmind",
     sheets: 1,
-    activenetSite: "Aldergrove",
   },
 
   // ── Planet Ice (DaySmart) ────────────────────────────────────────────────

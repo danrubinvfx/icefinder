@@ -7,7 +7,7 @@
  */
 import type { PrismaClient } from "@prisma/client";
 import { FACILITIES, type FacilitySeed } from "../domain";
-import { collectActiveNet, resetActiveNetCache } from "./activenet";
+import { collectActiveNet, resetActiveNetCache, generateLangleyLiveSessions } from "./activenet";
 import { fetchBurnabySessions } from "./burnaby";
 import { collectVancouver, resetVancouverCache } from "./vancouver";
 import { collectPerfectMind, resetPerfectMindCache } from "./perfectmind";
@@ -56,6 +56,11 @@ function collectorFor(f: FacilitySeed) {
   if (f.slug === "poirier") {
     return async (_facility: FacilitySeed, window: IngestWindow) => {
       return fetchPoirierSessions(window.from, window.to);
+    };
+  }
+  if (f.municipality === "Langley" || f.slug === "george-preston" || f.slug === "aldergrove-cucc") {
+    return async (facility: FacilitySeed, window: IngestWindow) => {
+      return generateLangleyLiveSessions(facility.slug as "george-preston" | "aldergrove-cucc", window);
     };
   }
   if (f.bookingPlatform === "canlan") return collectCanlan;

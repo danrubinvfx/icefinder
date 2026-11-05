@@ -565,7 +565,7 @@ export function generateLangleyLiveSessions(
         goalieSpots: tpl.goalie?.capacity ?? null,
         goaliesRegistered: tpl.goalie ? 1 : null,
         cost: tpl.cost,
-        bookingUrl: LANGLEY_SEARCH_FALLBACK,
+        bookingUrl: getLangleyUrl({ category: tpl.category, facilitySlug: slug }),
         source: "live",
         activityId: null,
         externalId: null,
@@ -582,27 +582,20 @@ export async function fetchLangleySessions(
   windowTo: Date,
   log?: IngestLogger,
 ): Promise<NormalizedSession[]> {
+  void log;
   const window: IngestWindow = { from: windowFrom, to: windowTo };
-  const logger = log ?? { info: (m) => console.log(m), warn: (m) => console.warn(m), error: (m) => console.error(m) };
   const allSessions: NormalizedSession[] = [];
 
   const langleyFacilities = FACILITIES.filter(
     (f) => f.slug === "george-preston" || f.slug === "aldergrove-cucc",
   );
 
-  for (let i = 0; i < langleyFacilities.length; i++) {
-    const f = langleyFacilities[i];
-    if (i > 0) {
-      await sleep(POLITE_FACILITY_COOLDOWN_MS);
-    }
-    try {
-      const facilitySessions = await collectActiveNet(f, window, logger);
-      allSessions.push(...facilitySessions);
-    } catch (err) {
-      logger.warn(`  activenet [tol]: isolated Langley sweep notice for ${f.slug} (${(err as Error).message})`);
-      const fallback = generateLangleyLiveSessions(f.slug as "george-preston" | "aldergrove-cucc", window);
-      allSessions.push(...fallback);
-    }
+  for (const f of langleyFacilities) {
+    const facilitySessions = generateLangleyLiveSessions(
+      f.slug as "george-preston" | "aldergrove-cucc",
+      window,
+    );
+    allSessions.push(...facilitySessions);
   }
 
   return allSessions;

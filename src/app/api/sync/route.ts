@@ -43,7 +43,7 @@ async function handle(req: NextRequest) {
       console.error("[IceFinder] Poirier arena sync error:", poirierErr);
     }
 
-    // Isolated arena-level sync for Township of Langley (George Preston & Aldergrove CUCC) [activenet]
+    // Isolated arena-level sync for Township of Langley (George Preston & Aldergrove CUCC) [perfectmind]
     try {
       const windowFrom = new Date(Date.now() - 3 * 3_600_000);
       const windowTo = new Date(Date.now() + 8 * 86_400_000);

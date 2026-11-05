@@ -185,7 +185,7 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
     },
   });
   if (purgedMock.count > 0) {
-    console.log(`Purged ${purgedMock.count} legacy demo records for Langley -> verified live ActiveNet.`);
+    console.log(`Purged ${purgedMock.count} legacy demo records for Langley -> verified live PerfectMind.`);
   }
 
   if (updatedCount > 0) {
@@ -217,12 +217,12 @@ async function once() {
     // Arena-level sync for Township of Langley (George Preston & Aldergrove CUCC)
     if (!opts.only?.length || opts.only.includes("george-preston") || opts.only.includes("aldergrove-cucc")) {
       try {
-        console.log("\n▶ Arena-level sync: Township of Langley (George Preston & Aldergrove CUCC) [activenet]");
+        console.log("\n▶ Arena-level sync: Township of Langley (George Preston & Aldergrove CUCC) [perfectmind]");
         const windowFrom = new Date(Date.now() - 3 * 3_600_000);
         const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
         const langleySessions = await fetchLangleySessions(windowFrom, windowTo);
         const { count, transitioned } = await upsertLangleySessions(prisma, langleySessions);
-        console.log(`  ✓ Langley: ${count} verified live ActiveNet sessions synchronized to database.`);
+        console.log(`  ✓ Langley: ${count} verified live PerfectMind sessions synchronized to database.`);
         transitionedSessions.push(...transitioned);
       } catch (langleyErr) {
         console.error("  ✗ Langley arena-level ingestion failed:", langleyErr);

@@ -391,37 +391,54 @@ export function getNewWestminsterUrl(activityId?: number | string | null): strin
   return NEW_WESTMINSTER_SEARCH_URL;
 }
 
-// ── Langley (Township of Langley ActiveNet) ────────────────────────────
-export const LANGLEY_SEARCH_FALLBACK =
-  "https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list";
+// ── Township of Langley / TOL (PerfectMind) ────────────────────────────
+export const TOL_FACILITIES = ["george-preston", "aldergrove-cucc"];
 
-export function getLangleyDetailUrl(activityId: number | string): string {
-  const cleanId = String(activityId).replace(/^activenet:/i, "").replace(/\D/g, "");
-  return `https://anc.ca.apm.activecommunities.com/tol/activity/search/detail/${cleanId}?onlineSiteId=0&from_original_cui=true`;
+export const TOL_PERFECTMIND_WIDGET_URL =
+  "https://tol.perfectmind.com/28448/Clients/BookMe4?widgetId=15f6af07-39c5-473e-b053-96653f77a406";
+
+export const TOL_PERFECTMIND_REGISTRATION_URL = TOL_PERFECTMIND_WIDGET_URL;
+
+export const TOL_SKATING_FALLBACK_URL =
+  "https://www.tol.ca/en/recreation-culture/skating.aspx";
+
+export const TOL_FACILITY_URLS: Record<string, string> = {
+  "george-preston": TOL_PERFECTMIND_REGISTRATION_URL,
+  "aldergrove-cucc": TOL_PERFECTMIND_REGISTRATION_URL,
+};
+
+export const LANGLEY_SEARCH_FALLBACK = TOL_PERFECTMIND_REGISTRATION_URL;
+
+export function getTolUrl(category?: Category | string | null): string {
+  if (category === "public_skate") {
+    return TOL_SKATING_FALLBACK_URL;
+  }
+  return TOL_PERFECTMIND_REGISTRATION_URL;
 }
 
-export function getLangleyCategoryUrl(category?: Category | string): string {
-  const keyword =
-    category === "hockey_dropin"
-      ? "hockey"
-      : category === "stick_and_puck"
-      ? "stick"
-      : category === "figure_buyon"
-      ? "figure"
-      : "skate";
-  return `https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=${encodeURIComponent(keyword)}&viewMode=list`;
+export function getLangleyDetailUrl(activityId?: number | string): string {
+  void activityId;
+  return TOL_PERFECTMIND_REGISTRATION_URL;
 }
 
-export function getLangleyUrl(opts: {
-  activityId?: number | string | null;
-  category?: Category | string | null;
-  facilitySlug?: string | null;
-}): string {
-  const cleanId = opts.activityId
-    ? String(opts.activityId).replace(/^activenet:/i, "").replace(/\D/g, "")
-    : null;
-  if (cleanId) return getLangleyDetailUrl(cleanId);
-  return LANGLEY_SEARCH_FALLBACK;
+export function getLangleyCategoryUrl(category?: Category | string | null): string {
+  return getTolUrl(category);
+}
+
+export function getLangleyUrl(
+  optsOrCat?:
+    | {
+        activityId?: number | string | null;
+        category?: Category | string | null;
+        facilitySlug?: string | null;
+      }
+    | Category
+    | string
+    | null,
+): string {
+  const cat =
+    optsOrCat && typeof optsOrCat === "object" ? optsOrCat.category : optsOrCat;
+  return getTolUrl(cat);
 }
 
 // ── Planet Ice (DaySmart) ────────────────────────────────────────────────
@@ -591,21 +608,16 @@ export function resolveBookingUrl(opts: {
     return getNewWestminsterUrl(rawId);
   }
 
-  // 10. Langley (Township of Langley ActiveNet)
+  // 10. Township of Langley (TOL PerfectMind)
   if (
     municipality === "Langley" ||
-    (facilitySlug && ["george-preston", "aldergrove-cucc"].includes(facilitySlug)) ||
-    (bookingUrl && bookingUrl.includes("/tol/"))
+    (facilitySlug && (facilitySlug === "george-preston" || facilitySlug === "aldergrove-cucc")) ||
+    (bookingUrl && (bookingUrl.includes("tol.perfectmind.com") || bookingUrl.includes("tol.ca") || (bookingUrl.includes("/tol/") && bookingUrl.includes("activecommunities.com"))))
   ) {
-    const detailMatch = bookingUrl?.match(/\/activity\/search\/detail\/(\d+)/i);
-    const rawId =
-      activityId ??
-      (rawExternalId ? String(rawExternalId).replace(/^activenet:/i, "").replace(/\D/g, "") : null) ??
-      (detailMatch ? detailMatch[1] : null);
-    if (rawId) {
-      return getLangleyDetailUrl(rawId);
+    if (category === "public_skate") {
+      return TOL_SKATING_FALLBACK_URL;
     }
-    return LANGLEY_SEARCH_FALLBACK;
+    return TOL_PERFECTMIND_REGISTRATION_URL;
   }
 
   // 11. Burnaby (ActiveNet)

@@ -104,13 +104,13 @@ export const FACILITY_CONTACTS: Record<string, FacilityContact> = {
     slug: 'george-preston',
     name: 'George Preston Recreation Centre',
     phone: '(604) 534-3266',
-    scheduleUrl: 'https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list'
+    scheduleUrl: 'https://www.tol.ca/en/recreation-culture/skating.aspx'
   },
   'aldergrove-cucc': {
     slug: 'aldergrove-cucc',
     name: 'Aldergrove Credit Union Community Centre',
     phone: '(604) 857-4299',
-    scheduleUrl: 'https://anc.ca.apm.activecommunities.com/tol/activity/search?onlineSiteId=0&activity_keyword=skate&viewMode=list'
+    scheduleUrl: 'https://www.tol.ca/en/recreation-culture/skating.aspx'
   },
   // Surrey
   'north-surrey': {
