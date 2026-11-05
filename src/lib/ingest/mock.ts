@@ -200,7 +200,8 @@ const PUBLIC_SKATE_SCHEDULE: Record<string, Template[]> = {
     { title: "Toonie Skate", days: [5], start: "19:00", minutes: 90, capacity: 250, rink: "Rink 1", cost: 2 },
   ],
   kensington: [
-    { title: "Public Skate", days: [2, 4], start: "15:30", minutes: 90, capacity: 200, rink: "Rink 1", cost: 6.4 },
+    { title: "Public Skate", days: [2], start: "15:30", minutes: 90, capacity: 200, rink: "Rink 1", cost: 6.4 },
+    { title: "Public Skate", days: [4], start: "09:00", minutes: 150, capacity: 200, rink: "Rink 1", cost: 6.4 },
     { title: "Family Skate", days: [6, 0], start: "14:00", minutes: 120, capacity: 250, rink: "Rink 1", cost: 6.4 },
   ],
   "bill-copeland": [

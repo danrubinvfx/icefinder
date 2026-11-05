@@ -106,6 +106,22 @@ async function sanitizeAllDatabaseRows(prismaClient: PrismaClient) {
       continue;
     }
 
+    // Purge invalid Kensington Thursday 3:30 PM (15:30) public skate sessions
+    // Thursdays from 3:30 PM to 7:00 PM are dedicated to Burnaby Skating Lessons (e.g. Blades 1/2) and club packages, not drop-in public skate.
+    if (
+      s.facility.slug === "kensington" &&
+      s.category === "public_skate" &&
+      toZonedTime(s.startTime, TIMEZONE).getDay() === 4
+    ) {
+      const zHours = toZonedTime(s.startTime, TIMEZONE).getHours();
+      const zMinutes = toZonedTime(s.startTime, TIMEZONE).getMinutes();
+      const totalMinutes = zHours * 60 + zMinutes;
+      if (totalMinutes >= 15 * 60 + 30 && totalMinutes < 19 * 60) {
+        await prismaClient.iceSession.delete({ where: { id: s.id } });
+        continue;
+      }
+    }
+
     const cleanUrl =
       s.facility.bookingPlatform === "daysmart" || s.facility.slug.startsWith("planet-ice-")
         ? resolveBookingUrl({
