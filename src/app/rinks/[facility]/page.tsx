@@ -6,6 +6,7 @@ import { FACILITY_CONTACTS, getFacilitySheets } from "@/lib/facilities";
 import { getFeed } from "@/lib/queries";
 import { buildSportsEventSchema } from "@/lib/schema";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
+import { hasGoalieNeeded, isGoalieFree } from "@/lib/sessions";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -232,7 +233,8 @@ export default async function RinkPage({ params }: RouteProps) {
                     {session.openSpots > 0
                       ? `${session.openSpots} spots open`
                       : "Full / Waitlist only"}
-                    {session.isGoalieFree ? " · Free for goalies" : ""}
+                    {hasGoalieNeeded(session) ? " · Goalie Spot Available" : ""}
+                    {isGoalieFree(session) ? " · Free for goalies" : ""}
                   </p>
                   {session.bookingUrl && (
                     <p>

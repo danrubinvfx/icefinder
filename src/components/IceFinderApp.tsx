@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, MapPin, ShieldHalf, Snowflake, RefreshCw, SearchX, Building2, Phone, Layers, ExternalLink } from "lucide-react";
+import { CalendarDays, ChevronDown, MapPin, Snowflake, RefreshCw, SearchX, Building2, Phone, Layers, ExternalLink } from "lucide-react";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -24,7 +24,7 @@ import {
   shortDow,
   weekendDays,
 } from "@/lib/time";
-import { SessionCard, goalieNeeded } from "./SessionCard";
+import { SessionCard, hasGoalieNeeded, isGoalieFree } from "./SessionCard";
 import { Footer } from "./Footer";
 
 type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
@@ -279,7 +279,7 @@ export function IceFinderApp({
         matchesMunicipalityFilter(s.municipality, municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
-        (!goalieOnly || goalieNeeded(s)),
+        (!goalieOnly || hasGoalieNeeded(s) || isGoalieFree(s)),
     );
   }, [indexed, selectedDays, now, municipality, facility, openOnly, goalieOnly]);
 
@@ -294,7 +294,7 @@ export function IceFinderApp({
         matchesMunicipalityFilter(s.municipality, municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
-        (!goalieOnly || goalieNeeded(s))
+        (!goalieOnly || hasGoalieNeeded(s) || isGoalieFree(s))
       ) {
         counts.all++;
         counts[s.category] = (counts[s.category] ?? 0) + 1;
@@ -302,6 +302,24 @@ export function IceFinderApp({
     }
     return counts;
   }, [indexed, selectedDays, now, municipality, facility, openOnly, goalieOnly]);
+
+  const goalieNeededCount = useMemo(() => {
+    const days = new Set(selectedDays);
+    let count = 0;
+    for (const { s, day, endMs } of indexed) {
+      if (
+        days.has(day) &&
+        endMs > now &&
+        matchesMunicipalityFilter(s.municipality, municipality) &&
+        (facility === "all" || s.facilitySlug === facility) &&
+        (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
+        (hasGoalieNeeded(s) || isGoalieFree(s))
+      ) {
+        count++;
+      }
+    }
+    return count;
+  }, [indexed, selectedDays, now, municipality, facility, openOnly]);
 
   const visible = useMemo(() => {
     return baseFiltered.filter(({ s }) => {
@@ -519,7 +537,7 @@ export function IceFinderApp({
         </nav>
 
         {/* Category pills */}
-        <nav aria-label="Category" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
+        <nav aria-label="Category" className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 pb-2">
           <Pill active={category === "all"} onClick={() => setCategory("all")} count={categoryCounts.all}>
             All
           </Pill>
@@ -528,6 +546,33 @@ export function IceFinderApp({
               {CATEGORY_LABELS[c]}
             </Pill>
           ))}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !goalieOnly;
+              setGoalieOnly(next);
+              if (next && category !== "all" && category !== "hockey_dropin") {
+                setCategory("all");
+              }
+            }}
+            aria-pressed={goalieOnly}
+            className={`inline-flex min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
+              goalieOnly
+                ? "bg-emerald-950 text-emerald-400 ring-2 ring-emerald-500 shadow-md animate-pulse"
+                : "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-300 hover:bg-emerald-100"
+            }`}
+          >
+            <span aria-hidden>🥅</span> Goalies Needed
+            {goalieNeededCount > 0 && (
+              <span
+                className={`min-w-5 rounded-full px-1.5 text-center text-[11px] tabular-nums font-bold ${
+                  goalieOnly ? "bg-emerald-500 text-slate-950" : "bg-emerald-200 text-emerald-900"
+                }`}
+              >
+                {goalieNeededCount}
+              </span>
+            )}
+          </button>
         </nav>
 
         {/* Toggles + facility dropdown */}
@@ -535,9 +580,14 @@ export function IceFinderApp({
           <Toggle checked={openOnly} onChange={setOpenOnly} label="Open Spots Only" />
           <Toggle
             checked={goalieOnly}
-            onChange={setGoalieOnly}
-            label="Goalie Needed"
-            icon={<ShieldHalf className="size-4" aria-hidden />}
+            onChange={(next) => {
+              setGoalieOnly(next);
+              if (next && category !== "all" && category !== "hockey_dropin") {
+                setCategory("all");
+              }
+            }}
+            label="Goalies Needed"
+            icon={<span aria-hidden>🥅</span>}
           />
           <label className="relative shrink-0">
             <span className="sr-only">Facility</span>
@@ -669,7 +719,9 @@ export function IceFinderApp({
             <SearchX className="mx-auto size-10 text-slate-400" aria-hidden />
             <h2 className="mt-3 text-base font-bold text-slate-800">No sessions match your filters</h2>
             <p className="mt-1 text-sm text-slate-600">
-              {dateMode === "today"
+              {goalieOnly
+                ? "No open goalie spots found for the selected timeframe and municipality. Try expanding to Next 7 Days or All Metro Vancouver."
+                : dateMode === "today"
                 ? "Today's sessions may have already finished for the day. Check the upcoming week, switch municipality, or clear filters."
                 : "Try widening your date range, switching municipality, or turning off \u201cOpen Spots Only\u201d."}
             </p>

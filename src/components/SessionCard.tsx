@@ -32,58 +32,25 @@ const CATEGORY_STYLE: Record<Category, { bar: string; text: string; bg: string }
   public_skate: { bar: "bg-teal-500", text: "text-teal-700", bg: "bg-teal-50" },
 };
 
-export type DivisionChip =
-  | "19+ Adult"
-  | "30+"
-  | "50+"
-  | "Youth (11-18)"
-  | "Family / All Ages"
-  | "Buy-On / StarSkate";
+import {
+  hasGoalieNeeded,
+  isGoalieFree,
+  parseDivisionChips,
+  goalieNeeded,
+  goalieFree,
+  type DivisionChip,
+  type DivisionTag,
+} from "@/lib/sessions";
 
-export function goalieNeeded(s: SessionDTO): boolean {
-  if (s.category !== "hockey_dropin") return false;
-  if (s.goalieSpots !== null && s.goalieSpots > 0) {
-    if (s.goaliesRegistered === null) return true;
-    return s.goaliesRegistered < s.goalieSpots;
-  }
-  if (s.goaliesRegistered !== null && s.goaliesRegistered <= 1) return true;
-  return /goalie\s*(needed|wanted|spots?\s*open|required)/i.test(s.rawTitle);
-}
-
-export function goalieFree(s: SessionDTO): boolean {
-  if (s.category !== "hockey_dropin") return false;
-  return Boolean(s.isGoalieFree) || /goalies?\s*(are\s*)?(free|\$0)|free\s*(for\s*)?goalies?/i.test(s.rawTitle);
-}
-
-export function parseDivisionChips(s: SessionDTO): DivisionChip[] {
-  const chips: DivisionChip[] = [];
-  const t = s.rawTitle.toLowerCase();
-
-  const is30Plus = /\b30\s*(\+|yrs|years)/i.test(t);
-  const is50Plus = /\b(50|55|60)\s*(\+|yrs|years)|\bsenior/i.test(t);
-  const isYouth = /\byouth\b|\b1[1-3]\s*-\s*1[7-8]\b|\bteen/i.test(t);
-  const isParentChild = /\b(adult\s*&\s*child|parent\s*&?\s*tot|0\s*-\s*6)\b/i.test(t);
-  const isAdult =
-    !is30Plus &&
-    !is50Plus &&
-    !isParentChild &&
-    (/\b(18|19)\s*(\+|yrs|years|&\s*over|and\s*over)/i.test(t) || /\badults?\b/i.test(t) || /\bshinny\b/i.test(t));
-  const isFamilyOrAllAges =
-    isParentChild ||
-    /\b(family|all\s*ages|everyone\s*welcome|public\s*skate|leisure\s*skate|community\s*skate|3\+)\b/i.test(t) ||
-    (!is30Plus && !is50Plus && !isYouth && !isAdult && /\btoonie\s*skate\b/i.test(t));
-  const isBuyOn =
-    s.category === "figure_buyon" || /\b(buy[\s-]?on|starskate|star\s*\d|figure\s*skat|freestyle|patch)\b/i.test(t);
-
-  if (isAdult) chips.push("19+ Adult");
-  if (is30Plus) chips.push("30+");
-  if (is50Plus) chips.push("50+");
-  if (isYouth) chips.push("Youth (11-18)");
-  if (isFamilyOrAllAges) chips.push("Family / All Ages");
-  if (isBuyOn) chips.push("Buy-On / StarSkate");
-
-  return chips;
-}
+export {
+  hasGoalieNeeded,
+  isGoalieFree,
+  parseDivisionChips,
+  goalieNeeded,
+  goalieFree,
+  type DivisionChip,
+  type DivisionTag,
+};
 
 function getRequirementBadgeStyle(req: string): string {
   if (req === "Women+ / 19+") {
@@ -213,10 +180,10 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     <>
       <article
         className={`relative overflow-hidden rounded-2xl bg-white shadow-sm ring-1 transition hover:shadow-md ${
-          isSpecial
+          needsGoalie
+            ? "ring-2 ring-emerald-500/80 hover:ring-emerald-500"
+            : isSpecial
             ? "ring-amber-300/80 hover:ring-amber-400"
-            : needsGoalie
-            ? "ring-2 ring-amber-400"
             : "ring-slate-200"
         }`}
       >
@@ -227,19 +194,29 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <span className={`rounded-md px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${style.bg} ${style.text}`}>
                 {CATEGORY_SHORT[s.category]}
               </span>
+              {divisionChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80"
+                >
+                  {chip}
+                </span>
+              ))}
+              {s.category === "hockey_dropin" && needsGoalie && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/85 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/40 shadow-xs animate-pulse">
+                  <span aria-hidden>🥅</span> Goalie Needed
+                </span>
+              )}
+              {s.category === "hockey_dropin" && isFreeGoalie && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900 border border-emerald-300 shadow-2xs">
+                  <span aria-hidden>🆓</span> Goalie Free
+                </span>
+              )}
               {isSpecial && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-900 ring-1 ring-amber-300 shadow-2xs">
                   <span aria-hidden>✨</span> Unlisted Ice
                 </span>
               )}
-              {divisionChips.map((chip) => (
-                <span
-                  key={chip}
-                  className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200/80"
-                >
-                  {chip}
-                </span>
-              ))}
               {requirements.map((req) => (
                 <span
                   key={req}
@@ -249,16 +226,6 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   {req}
                 </span>
               ))}
-              {needsGoalie && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-800 ring-1 ring-amber-300/80">
-                  <ShieldHalf className="size-3" aria-hidden /> Goalie Needed
-                </span>
-              )}
-              {isFreeGoalie && (
-                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">
-                  <ShieldHalf className="size-3" aria-hidden /> Goalies Free
-                </span>
-              )}
               {s.source === "mock" && (
                 <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
                   Demo data
