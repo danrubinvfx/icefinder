@@ -1,9 +1,13 @@
 /**
  * Ingestion orchestrator — shared by the CLI (`scripts/ingest.ts`) and the HTTP cron route.
  *
- * For each rink: collect live → (on failure) mock fallback → add published public-skate
- * timetable → upsert by composite key → prune slots that vanished from the source.
- * A failing rink is logged and skipped; it never aborts the batch.
+ * Parallelizes sweeps across independent software networks:
+ *  - Worker 1: ActiveNet (Burnaby, City of Vancouver, West Vancouver, New Westminster, Langley)
+ *  - Worker 2: PerfectMind / Xplor (Richmond, Coquitlam, Delta, Surrey, NVRC)
+ *  - Worker 3: DaySmart / Dash (Canlan Scotia Barn, Planet Ice)
+ *
+ * Rate limits and politeness delays are preserved per provider network.
+ * Sessions from all workers are aggregated and upserted into Supabase in batched chunks.
  */
 import type { PrismaClient } from "@prisma/client";
 import { FACILITIES, type FacilitySeed } from "../domain";
@@ -21,11 +25,55 @@ import { sessionKey } from "../normalize";
 export const POLITE_FACILITY_COOLDOWN_MS = 1500;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+export const ACTIVENET_FACILITY_SLUGS = [
+  "rosemary-brown",
+  "kensington",
+  "bill-copeland",
+  "britannia",
+  "hillcrest",
+  "kitsilano",
+  "trout-lake",
+  "sunset",
+  "killarney",
+  "west-vancouver-arena",
+  "moody-park",
+  "george-preston",
+  "aldergrove-cucc",
+] as const;
+
+export const PERFECTMIND_FACILITY_SLUGS = [
+  "richmond-ice-centre",
+  "minoru",
+  "poirier",
+  "north-delta",
+  "sungod",
+  "south-delta",
+  "tilbury",
+  "north-surrey",
+  "surrey-sport-leisure",
+  "cloverdale-ice",
+  "south-surrey",
+  "newton-arena",
+  "karen-magnussen",
+  "harry-jerome",
+] as const;
+
+export const DAYSMART_FACILITY_SLUGS = [
+  "scotia-barn",
+  "planet-ice-coquitlam",
+  "planet-ice-delta",
+  "planet-ice-maple-ridge",
+] as const;
+
 export interface IngestOptions {
   mode: "auto" | "live" | "mock"; // auto = live with per-rink mock fallback
   days: number;
   only?: string[]; // facility slugs
   logger?: IngestLogger;
+}
+
+export interface RunnerOptions extends Partial<IngestOptions> {
+  window?: IngestWindow;
 }
 
 export interface FacilityResult {
@@ -35,6 +83,14 @@ export interface FacilityResult {
   created: number;
   updated: number;
   pruned: number;
+  error?: string;
+}
+
+export interface WorkerResult {
+  network: "ActiveNet" | "PerfectMind" | "DaySmart";
+  sessions: NormalizedSession[];
+  facilityResults: FacilityResult[];
+  seenIdsByFacility: Map<string, string[]>;
   error?: string;
 }
 
@@ -51,6 +107,12 @@ const consoleLogger: IngestLogger = {
   warn: (m) => console.warn(m),
   error: (m) => console.error(m),
 };
+
+export function getSessionId(s: NormalizedSession): string {
+  return s.facilitySlug === "poirier"
+    ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
+    : sessionKey(s.facilitySlug, s.startTime, s.category);
+}
 
 function collectorFor(f: FacilitySeed) {
   if (f.slug === "poirier") {
@@ -102,27 +164,322 @@ function mergeByKey(...lists: NormalizedSession[][]): NormalizedSession[] {
           continue;
         }
       }
-      const k =
-        s.facilitySlug === "poirier"
-          ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
-          : sessionKey(s.facilitySlug, s.startTime, s.category);
+      const k = getSessionId(s);
       if (!map.has(k)) map.set(k, s);
     }
   }
   return [...map.values()];
 }
 
+function resolveRunnerParams(
+  arg1?: PrismaClient | RunnerOptions,
+  arg2?: RunnerOptions | IngestLogger,
+  arg3?: IngestLogger,
+): { opts: RunnerOptions; log: IngestLogger; window: IngestWindow } {
+  let opts: RunnerOptions = {};
+  let log: IngestLogger = consoleLogger;
+
+  if (arg1 && typeof (arg1 as PrismaClient).$disconnect === "function") {
+    if (arg2 && typeof (arg2 as RunnerOptions).mode !== "undefined") {
+      opts = arg2 as RunnerOptions;
+      if (arg3) log = arg3;
+    } else if (arg2 && typeof (arg2 as IngestLogger).info === "function") {
+      log = arg2 as IngestLogger;
+    }
+  } else if (arg1) {
+    opts = arg1 as RunnerOptions;
+    if (arg2 && typeof (arg2 as IngestLogger).info === "function") {
+      log = arg2 as IngestLogger;
+    }
+  }
+
+  if (opts.logger) {
+    log = opts.logger;
+  }
+
+  const days = opts.days ?? 8;
+  const startedAt = Date.now();
+  const window: IngestWindow = opts.window ?? {
+    from: new Date(startedAt - 3 * 3_600_000),
+    to: new Date(startedAt + days * 86_400_000),
+  };
+
+  return { opts, log, window };
+}
+
+/**
+ * Worker 1: ActiveNet (Burnaby, City of Vancouver, West Vancouver, New Westminster, Langley)
+ */
+export async function runActiveNetIngest(
+  arg1?: PrismaClient | RunnerOptions,
+  arg2?: RunnerOptions | IngestLogger,
+  arg3?: IngestLogger,
+): Promise<WorkerResult> {
+  const { opts, log, window } = resolveRunnerParams(arg1, arg2, arg3);
+  const mode = opts.mode ?? "auto";
+
+  resetActiveNetCache();
+  resetVancouverCache();
+
+  const facilities = FACILITIES.filter(
+    (f) =>
+      (ACTIVENET_FACILITY_SLUGS as readonly string[]).includes(f.slug) &&
+      (!opts.only?.length || opts.only.includes(f.slug)),
+  );
+
+  const workerResult: WorkerResult = {
+    network: "ActiveNet",
+    sessions: [],
+    facilityResults: [],
+    seenIdsByFacility: new Map(),
+  };
+
+  try {
+    for (let i = 0; i < facilities.length; i++) {
+      const facility = facilities[i];
+      if (i > 0 && mode !== "mock") {
+        await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      }
+      const facResult: FacilityResult = {
+        slug: facility.slug,
+        status: "failed",
+        collected: 0,
+        created: 0,
+        updated: 0,
+        pruned: 0,
+      };
+
+      log.info(`[ActiveNet] ▶ ${facility.name} (${facility.municipality}) [${facility.bookingPlatform}]`);
+
+      try {
+        let primary: NormalizedSession[] = [];
+        if (mode === "mock") {
+          primary = mockSessionsFor(facility, window);
+          facResult.status = "mock";
+        } else {
+          try {
+            primary = await collectorFor(facility)(facility, window, log);
+            if (primary.length === 0 && mode === "auto") {
+              log.warn(`  [ActiveNet] ! live returned 0 sessions for ${facility.slug} → supplementing with fallback schedule`);
+              primary = mockSessionsFor(facility, window);
+              facResult.status = "fallback";
+            } else {
+              facResult.status = "live";
+              log.info(`  [ActiveNet] ✓ live: ${primary.length} normalized sessions`);
+            }
+          } catch (err) {
+            const msg = (err as Error).message;
+            facResult.error = msg;
+            if (mode === "live") throw err;
+            log.warn(`  [ActiveNet] ✗ live collection failed (${msg}) → using mock fallback`);
+            primary = mockSessionsFor(facility, window);
+            facResult.status = "fallback";
+          }
+        }
+
+        const sessions = mergeByKey(primary, publicSkateScheduleFor(facility, window));
+        facResult.collected = sessions.length;
+        const seenIds = sessions.map((s) => getSessionId(s));
+        workerResult.seenIdsByFacility.set(facility.slug, seenIds);
+        workerResult.sessions.push(...sessions);
+      } catch (err) {
+        facResult.status = "failed";
+        facResult.error = (err as Error).message;
+        log.error(`  [ActiveNet] ✗ ${facility.slug} failed: ${facResult.error}`);
+      }
+      workerResult.facilityResults.push(facResult);
+    }
+  } catch (workerErr) {
+    workerResult.error = (workerErr as Error).message;
+    log.error(`[ActiveNet] Worker error: ${workerResult.error}`);
+  }
+
+  return workerResult;
+}
+
+/**
+ * Worker 2: PerfectMind / Xplor (Richmond, Coquitlam, Delta, Surrey, NVRC)
+ */
+export async function runPerfectMindIngest(
+  arg1?: PrismaClient | RunnerOptions,
+  arg2?: RunnerOptions | IngestLogger,
+  arg3?: IngestLogger,
+): Promise<WorkerResult> {
+  const { opts, log, window } = resolveRunnerParams(arg1, arg2, arg3);
+  const mode = opts.mode ?? "auto";
+
+  resetPerfectMindCache();
+
+  const facilities = FACILITIES.filter(
+    (f) =>
+      (PERFECTMIND_FACILITY_SLUGS as readonly string[]).includes(f.slug) &&
+      (!opts.only?.length || opts.only.includes(f.slug)),
+  );
+
+  const workerResult: WorkerResult = {
+    network: "PerfectMind",
+    sessions: [],
+    facilityResults: [],
+    seenIdsByFacility: new Map(),
+  };
+
+  try {
+    for (let i = 0; i < facilities.length; i++) {
+      const facility = facilities[i];
+      if (i > 0 && mode !== "mock") {
+        await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      }
+      const facResult: FacilityResult = {
+        slug: facility.slug,
+        status: "failed",
+        collected: 0,
+        created: 0,
+        updated: 0,
+        pruned: 0,
+      };
+
+      log.info(`[PerfectMind] ▶ ${facility.name} (${facility.municipality}) [${facility.bookingPlatform}]`);
+
+      try {
+        let primary: NormalizedSession[] = [];
+        if (mode === "mock") {
+          primary = mockSessionsFor(facility, window);
+          facResult.status = "mock";
+        } else {
+          try {
+            primary = await collectorFor(facility)(facility, window, log);
+            if (primary.length === 0 && mode === "auto") {
+              log.warn(`  [PerfectMind] ! live returned 0 sessions for ${facility.slug} → supplementing with fallback schedule`);
+              primary = mockSessionsFor(facility, window);
+              facResult.status = "fallback";
+            } else {
+              facResult.status = "live";
+              log.info(`  [PerfectMind] ✓ live: ${primary.length} normalized sessions`);
+            }
+          } catch (err) {
+            const msg = (err as Error).message;
+            facResult.error = msg;
+            if (mode === "live") throw err;
+            log.warn(`  [PerfectMind] ✗ live collection failed (${msg}) → using mock fallback`);
+            primary = mockSessionsFor(facility, window);
+            facResult.status = "fallback";
+          }
+        }
+
+        const sessions = mergeByKey(primary, publicSkateScheduleFor(facility, window));
+        facResult.collected = sessions.length;
+        const seenIds = sessions.map((s) => getSessionId(s));
+        workerResult.seenIdsByFacility.set(facility.slug, seenIds);
+        workerResult.sessions.push(...sessions);
+      } catch (err) {
+        facResult.status = "failed";
+        facResult.error = (err as Error).message;
+        log.error(`  [PerfectMind] ✗ ${facility.slug} failed: ${facResult.error}`);
+      }
+      workerResult.facilityResults.push(facResult);
+    }
+  } catch (workerErr) {
+    workerResult.error = (workerErr as Error).message;
+    log.error(`[PerfectMind] Worker error: ${workerResult.error}`);
+  }
+
+  return workerResult;
+}
+
+/**
+ * Worker 3: DaySmart / Dash (Canlan Scotia Barn, Planet Ice)
+ */
+export async function runDaySmartIngest(
+  arg1?: PrismaClient | RunnerOptions,
+  arg2?: RunnerOptions | IngestLogger,
+  arg3?: IngestLogger,
+): Promise<WorkerResult> {
+  const { opts, log, window } = resolveRunnerParams(arg1, arg2, arg3);
+  const mode = opts.mode ?? "auto";
+
+  const facilities = FACILITIES.filter(
+    (f) =>
+      (DAYSMART_FACILITY_SLUGS as readonly string[]).includes(f.slug) &&
+      (!opts.only?.length || opts.only.includes(f.slug)),
+  );
+
+  const workerResult: WorkerResult = {
+    network: "DaySmart",
+    sessions: [],
+    facilityResults: [],
+    seenIdsByFacility: new Map(),
+  };
+
+  try {
+    for (let i = 0; i < facilities.length; i++) {
+      const facility = facilities[i];
+      if (i > 0 && mode !== "mock") {
+        await sleep(POLITE_FACILITY_COOLDOWN_MS);
+      }
+      const facResult: FacilityResult = {
+        slug: facility.slug,
+        status: "failed",
+        collected: 0,
+        created: 0,
+        updated: 0,
+        pruned: 0,
+      };
+
+      log.info(`[DaySmart] ▶ ${facility.name} (${facility.municipality}) [${facility.bookingPlatform}]`);
+
+      try {
+        let primary: NormalizedSession[] = [];
+        if (mode === "mock") {
+          primary = mockSessionsFor(facility, window);
+          facResult.status = "mock";
+        } else {
+          try {
+            primary = await collectorFor(facility)(facility, window, log);
+            if (primary.length === 0 && mode === "auto") {
+              log.warn(`  [DaySmart] ! live returned 0 sessions for ${facility.slug} → supplementing with fallback schedule`);
+              primary = mockSessionsFor(facility, window);
+              facResult.status = "fallback";
+            } else {
+              facResult.status = "live";
+              log.info(`  [DaySmart] ✓ live: ${primary.length} normalized sessions`);
+            }
+          } catch (err) {
+            const msg = (err as Error).message;
+            facResult.error = msg;
+            if (mode === "live") throw err;
+            log.warn(`  [DaySmart] ✗ live collection failed (${msg}) → using mock fallback`);
+            primary = mockSessionsFor(facility, window);
+            facResult.status = "fallback";
+          }
+        }
+
+        const sessions = mergeByKey(primary, publicSkateScheduleFor(facility, window));
+        facResult.collected = sessions.length;
+        const seenIds = sessions.map((s) => getSessionId(s));
+        workerResult.seenIdsByFacility.set(facility.slug, seenIds);
+        workerResult.sessions.push(...sessions);
+      } catch (err) {
+        facResult.status = "failed";
+        facResult.error = (err as Error).message;
+        log.error(`  [DaySmart] ✗ ${facility.slug} failed: ${facResult.error}`);
+      }
+      workerResult.facilityResults.push(facResult);
+    }
+  } catch (workerErr) {
+    workerResult.error = (workerErr as Error).message;
+    log.error(`[DaySmart] Worker error: ${workerResult.error}`);
+  }
+
+  return workerResult;
+}
+
 export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): Promise<IngestReport> {
   const log = opts.logger ?? consoleLogger;
   const startedAt = new Date();
-  // Window: start of "now minus 3h" (keep in-progress sessions) → N days ahead.
   const window: IngestWindow = {
     from: new Date(startedAt.getTime() - 3 * 3_600_000),
     to: new Date(startedAt.getTime() + opts.days * 86_400_000),
   };
-  resetActiveNetCache();
-  resetVancouverCache();
-  resetPerfectMindCache();
 
   const run = await prisma.syncRun.create({ data: { status: "running" } });
   const lines: string[] = [];
@@ -132,7 +489,9 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
     error: (m) => (lines.push(`ERROR ${m}`), log.error(m)),
   };
 
-  tee.info(`IceFinder ingest • mode=${opts.mode} • window ${window.from.toISOString()} → ${window.to.toISOString()}`);
+  tee.info(
+    `IceFinder ingest • mode=${opts.mode} • window ${window.from.toISOString()} → ${window.to.toISOString()}`,
+  );
 
   // Clean up any legacy pipe-delimited composite keys before upserting deterministic underscore keys
   try {
@@ -143,81 +502,99 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
     tee.warn(`Legacy key cleanup warning: ${(cleanupErr as Error).message}`);
   }
 
-  const targets = FACILITIES.filter((f) => !opts.only?.length || opts.only.includes(f.slug));
-  const results: FacilityResult[] = [];
-  const allTransitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> = [];
-
-  for (let i = 0; i < targets.length; i++) {
-    const facility = targets[i];
-    if (i > 0 && opts.mode !== "mock") {
-      await sleep(POLITE_FACILITY_COOLDOWN_MS);
-    }
-    const result: FacilityResult = { slug: facility.slug, status: "failed", collected: 0, created: 0, updated: 0, pruned: 0 };
-    tee.info(`\n▶ ${facility.name} (${facility.municipality}) [${facility.bookingPlatform}]`);
+  // Pre-seed/fetch facilities in DB to build slug -> facilityId map
+  const dbFacilityMap = new Map<string, string>();
+  for (const f of FACILITIES) {
     try {
-      const dbFacility = await prisma.facility.upsert({
-        where: { slug: facility.slug },
+      const dbFac = await prisma.facility.upsert({
+        where: { slug: f.slug },
         update: {
-          name: facility.name,
-          municipality: facility.municipality,
-          address: facility.address,
-          lat: facility.lat,
-          lng: facility.lng,
-          bookingPlatform: facility.bookingPlatform,
-          sheets: facility.sheets ?? 1,
+          name: f.name,
+          municipality: f.municipality,
+          address: f.address,
+          lat: f.lat,
+          lng: f.lng,
+          bookingPlatform: f.bookingPlatform,
+          sheets: f.sheets ?? 1,
         },
         create: {
-          slug: facility.slug,
-          name: facility.name,
-          municipality: facility.municipality,
-          address: facility.address,
-          lat: facility.lat,
-          lng: facility.lng,
-          bookingPlatform: facility.bookingPlatform,
-          sheets: facility.sheets ?? 1,
+          slug: f.slug,
+          name: f.name,
+          municipality: f.municipality,
+          address: f.address,
+          lat: f.lat,
+          lng: f.lng,
+          bookingPlatform: f.bookingPlatform,
+          sheets: f.sheets ?? 1,
         },
       });
+      dbFacilityMap.set(f.slug, dbFac.id);
+    } catch (facilityErr) {
+      tee.error(`Failed to seed facility ${f.slug}: ${(facilityErr as Error).message}`);
+    }
+  }
 
-      let primary: NormalizedSession[] = [];
-      if (opts.mode === "mock") {
-        primary = mockSessionsFor(facility, window);
-        result.status = "mock";
-      } else {
-        try {
-          primary = await collectorFor(facility)(facility, window, tee);
-          if (primary.length === 0 && opts.mode === "auto") {
-            tee.warn(`  ! live returned 0 sessions for ${facility.slug} → supplementing with fallback schedule`);
-            primary = mockSessionsFor(facility, window);
-            result.status = "fallback";
-          } else {
-            result.status = "live";
-            tee.info(`  ✓ live: ${primary.length} normalized sessions`);
-          }
-        } catch (err) {
-          const msg = (err as Error).message;
-          result.error = msg;
-          if (opts.mode === "live") throw err;
-          tee.warn(`  ✗ live collection failed (${msg}) → using mock fallback`);
-          primary = mockSessionsFor(facility, window);
-          result.status = "fallback";
-        }
+  tee.info(`Starting concurrent provider sweeps (ActiveNet, PerfectMind, DaySmart)...`);
+
+  // Execute sweeps concurrently across independent software networks
+  const [activeNetRes, perfectMindRes, daySmartRes] = await Promise.allSettled([
+    runActiveNetIngest({ ...opts, window }, tee),
+    runPerfectMindIngest({ ...opts, window }, tee),
+    runDaySmartIngest({ ...opts, window }, tee),
+  ]);
+
+  const allSessions: NormalizedSession[] = [];
+  const results: FacilityResult[] = [];
+  const seenIdsByFacility = new Map<string, string[]>();
+
+  const settledWorkers = [
+    { name: "ActiveNet", res: activeNetRes },
+    { name: "PerfectMind", res: perfectMindRes },
+    { name: "DaySmart", res: daySmartRes },
+  ];
+
+  for (const worker of settledWorkers) {
+    if (worker.res.status === "fulfilled") {
+      const val = worker.res.value;
+      allSessions.push(...val.sessions);
+      results.push(...val.facilityResults);
+      for (const [slug, ids] of val.seenIdsByFacility.entries()) {
+        seenIdsByFacility.set(slug, ids);
       }
+      tee.info(`  ✓ Worker ${worker.name} finished: collected ${val.sessions.length} sessions across ${val.facilityResults.length} arenas`);
+    } else {
+      tee.error(`  ✗ Worker ${worker.name} failed: ${worker.res.reason}`);
+    }
+  }
 
-      const sessions = mergeByKey(primary, publicSkateScheduleFor(facility, window));
-      result.collected = sessions.length;
+  tee.info(`Aggregated ${allSessions.length} total sessions. Batch upserting into Supabase...`);
 
-      const seen: string[] = [];
-      for (const s of sessions) {
-        const id =
-          s.facilitySlug === "poirier"
-            ? poirierSessionKey(s.facilitySlug, s.startTime, s.category)
-            : sessionKey(s.facilitySlug, s.startTime, s.category);
-        seen.push(id);
-        const existing = await prisma.iceSession.findUnique({
-          where: { id },
-          select: { id: true, openSpots: true, bookingUrl: true },
-        });
+  const facilityStats = new Map<string, { created: number; updated: number }>();
+  for (const r of results) {
+    facilityStats.set(r.slug, { created: 0, updated: 0 });
+  }
 
+  const allTransitioned: Array<{ sessionKey: string; openSpots: number; bookingUrl: string }> = [];
+
+  // Upsert in batched chunks to maximize Supabase throughput without exhausting connection limits
+  const BATCH_SIZE = 25;
+  for (let i = 0; i < allSessions.length; i += BATCH_SIZE) {
+    const chunk = allSessions.slice(i, i + BATCH_SIZE);
+    const chunkIds = chunk.map((s) => getSessionId(s));
+
+    const existingSessions = await prisma.iceSession.findMany({
+      where: { id: { in: chunkIds } },
+      select: { id: true, openSpots: true, bookingUrl: true },
+    });
+    const existingMap = new Map(existingSessions.map((e) => [e.id, e]));
+
+    await Promise.all(
+      chunk.map(async (s) => {
+        const id = getSessionId(s);
+        const facilityId = dbFacilityMap.get(s.facilitySlug);
+        if (!facilityId) return;
+
+        const existing = existingMap.get(id);
         if (existing && existing.openSpots === 0 && s.openSpots > 0) {
           allTransitioned.push({
             sessionKey: id,
@@ -228,7 +605,6 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
 
         await prisma.iceSession.upsert({
           where: { id },
-          // Dedupe: the slot already exists → refresh live capacity fields only (+ metadata that can change).
           update: {
             openSpots: s.openSpots,
             waitlistCount: s.waitlistCount,
@@ -249,7 +625,7 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
           },
           create: {
             id,
-            facilityId: dbFacility.id,
+            facilityId,
             rawTitle: s.rawTitle,
             category: s.category,
             rink: s.rink,
@@ -270,26 +646,39 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
             notes: s.notes ?? null,
           },
         });
-        if (existing) result.updated++;
-        else result.created++;
-      }
 
-      // Prune future slots in the window that the source no longer lists (cancelled/rescheduled).
-      const pruned = await prisma.iceSession.deleteMany({
-        where: {
-          facilityId: dbFacility.id,
-          startTime: { gte: window.from, lt: window.to },
-          id: { notIn: seen },
-        },
-      });
-      result.pruned = pruned.count;
-      tee.info(`  ↳ upserted ${sessions.length} (created ${result.created}, updated ${result.updated}, pruned ${result.pruned})`);
-    } catch (err) {
-      result.status = "failed";
-      result.error = (err as Error).message;
-      tee.error(`  ✗ ${facility.slug} failed: ${result.error} — continuing with next rink`);
+        const stat = facilityStats.get(s.facilitySlug);
+        if (stat) {
+          if (existing) stat.updated++;
+          else stat.created++;
+        }
+      }),
+    );
+  }
+
+  // Prune future slots in the window that the source no longer lists (cancelled/rescheduled)
+  for (const r of results) {
+    const stat = facilityStats.get(r.slug);
+    if (stat) {
+      r.created = stat.created;
+      r.updated = stat.updated;
     }
-    results.push(result);
+    const facilityId = dbFacilityMap.get(r.slug);
+    const seen = seenIdsByFacility.get(r.slug);
+    if (facilityId && seen && r.status !== "failed") {
+      try {
+        const pruned = await prisma.iceSession.deleteMany({
+          where: {
+            facilityId,
+            startTime: { gte: window.from, lt: window.to },
+            id: { notIn: seen },
+          },
+        });
+        r.pruned = pruned.count;
+      } catch (pruneErr) {
+        tee.warn(`Pruning warning for ${r.slug}: ${(pruneErr as Error).message}`);
+      }
+    }
   }
 
   // Housekeeping: drop sessions that ended more than 2 days ago.
@@ -297,7 +686,8 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
 
   const failed = results.filter((r) => r.status === "failed").length;
   const degraded = results.filter((r) => r.status === "fallback").length;
-  const status: IngestReport["status"] = failed === results.length ? "failed" : failed || degraded ? "partial" : "ok";
+  const status: IngestReport["status"] =
+    results.length === 0 || failed === results.length ? "failed" : failed || degraded ? "partial" : "ok";
   const finishedAt = new Date();
   const upserted = results.reduce((n, r) => n + r.created + r.updated, 0);
 
@@ -306,6 +696,8 @@ export async function runIngestion(prisma: PrismaClient, opts: IngestOptions): P
     data: { finishedAt, status, upserted, log: lines.join("\n").slice(-20_000) },
   });
 
-  tee.info(`\nDone in ${((finishedAt.getTime() - startedAt.getTime()) / 1000).toFixed(1)}s • status=${status} • ${upserted} rows upserted`);
+  tee.info(
+    `\nDone in ${((finishedAt.getTime() - startedAt.getTime()) / 1000).toFixed(1)}s • status=${status} • ${upserted} rows upserted across Metro Vancouver`,
+  );
   return { startedAt, finishedAt, status, results, transitionedSessions: allTransitioned };
 }

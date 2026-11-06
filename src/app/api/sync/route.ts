@@ -1,18 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { runIngestion } from "@/lib/ingest/engine";
-import { fetchPoirierSessions, upsertPoirierSessions } from "@/lib/ingest/poirier";
-import { fetchLangleySessions, upsertLangleySessions } from "@/lib/ingest/activenet";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 /**
  * Live sync API route.
  * - Triggered by Vercel Cron with `Authorization: Bearer $CRON_SECRET`
  * - Also callable via POST with `x-cron-secret: $CRON_SECRET`
- * - Ingests Burnaby ActiveNet & Canlan Scotia Barn with 1500ms polite delay
- * - Upserts sessions with composite dedupe key: facility_slug + startTime + category
+ * - Executes concurrent provider sweeps (ActiveNet, PerfectMind, DaySmart)
+ * - Upserts sessions in batched chunks with composite dedupe key: facility_slug + startTime + category
  */
 function authorized(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -33,26 +31,6 @@ async function handle(req: NextRequest) {
   try {
     const report = await runIngestion(prisma, { mode, days: 8 });
 
-    // Arena-level sync for Poirier Sport & Leisure Complex
-    try {
-      const windowFrom = new Date(Date.now() - 3 * 3_600_000);
-      const windowTo = new Date(Date.now() + 8 * 86_400_000);
-      const poirierSessions = await fetchPoirierSessions(windowFrom, windowTo);
-      await upsertPoirierSessions(prisma, poirierSessions);
-    } catch (poirierErr) {
-      console.error("[IceFinder] Poirier arena sync error:", poirierErr);
-    }
-
-    // Isolated arena-level sync for Township of Langley (George Preston & Aldergrove CUCC) [perfectmind]
-    try {
-      const windowFrom = new Date(Date.now() - 3 * 3_600_000);
-      const windowTo = new Date(Date.now() + 8 * 86_400_000);
-      const langleySessions = await fetchLangleySessions(windowFrom, windowTo);
-      await upsertLangleySessions(prisma, langleySessions);
-    } catch (langleyErr) {
-      console.error("[IceFinder] Langley arena sync error:", langleyErr);
-    }
-
     return NextResponse.json(report, {
       status: report.status === "failed" ? 502 : 200,
     });
@@ -60,7 +38,7 @@ async function handle(req: NextRequest) {
     console.error("[IceFinder] Sync route error:", err);
     return NextResponse.json(
       { error: "Sync failed", message: (err as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

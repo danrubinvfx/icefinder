@@ -15,7 +15,8 @@ const USER_AGENTS = [
 ];
 
 let uaCursor = Math.floor(Math.random() * USER_AGENTS.length);
-let lastRequestAt = 0;
+const hostLastTimes = new Map<string, number>();
+const hostLocks = new Map<string, Promise<void>>();
 
 export const POLITE_DELAY_MS = Number(process.env.INGEST_DELAY_MS ?? 1500);
 
@@ -33,10 +34,36 @@ function nextUserAgent() {
   return USER_AGENTS[uaCursor];
 }
 
-async function politeGate() {
-  const wait = lastRequestAt + POLITE_DELAY_MS - Date.now();
-  if (wait > 0) await sleep(wait);
-  lastRequestAt = Date.now();
+function getHost(url: string): string {
+  try {
+    return new URL(url).host.toLowerCase();
+  } catch {
+    return "default";
+  }
+}
+
+async function politeGate(url: string) {
+  const host = getHost(url);
+
+  while (hostLocks.has(host)) {
+    await hostLocks.get(host);
+  }
+
+  let releaseLock: () => void;
+  const lockPromise = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  hostLocks.set(host, lockPromise);
+
+  try {
+    const last = hostLastTimes.get(host) ?? 0;
+    const wait = last + POLITE_DELAY_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    hostLastTimes.set(host, Date.now());
+  } finally {
+    hostLocks.delete(host);
+    releaseLock!();
+  }
 }
 
 export async function fetchJson<T>(
@@ -44,7 +71,7 @@ export async function fetchJson<T>(
   init: RequestInit & { timeoutMs?: number } = {},
   attempt = 1,
 ): Promise<T> {
-  await politeGate();
+  await politeGate(url);
   const { timeoutMs = 8_000, headers, signal, ...rest } = init;
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;

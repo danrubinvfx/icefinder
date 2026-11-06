@@ -2,6 +2,11 @@
 /**
  * IceFinder ingestion CLI — Multi-municipality sweep across Metro Vancouver.
  *
+ * Parallelizes sweeps across independent software networks:
+ *  - Worker 1: ActiveNet (Burnaby, City of Vancouver, West Vancouver, New Westminster, Langley)
+ *  - Worker 2: PerfectMind / Xplor (Richmond, Coquitlam, Delta, Surrey, NVRC)
+ *  - Worker 3: DaySmart / Dash (Canlan Scotia Barn, Planet Ice)
+ *
  *   npx tsx scripts/ingest.ts                 # live, with per-rink fallback (default)
  *   npx tsx scripts/ingest.ts --mock          # mock data only (offline demo)
  *   npx tsx scripts/ingest.ts --live          # live only; failing rinks are logged + skipped
@@ -12,7 +17,14 @@
 import { PrismaClient } from "@prisma/client";
 import { toZonedTime } from "date-fns-tz";
 import { FACILITIES, TIMEZONE, type Category } from "../src/lib/domain";
-import { runIngestion, POLITE_FACILITY_COOLDOWN_MS, type IngestOptions } from "../src/lib/ingest/engine";
+import {
+  runIngestion,
+  runActiveNetIngest,
+  runPerfectMindIngest,
+  runDaySmartIngest,
+  POLITE_FACILITY_COOLDOWN_MS,
+  type IngestOptions,
+} from "../src/lib/ingest/engine";
 import {
   resolveBookingUrl,
   COQUITLAM_PERFECTMIND_ARENA_DROPIN_CALENDAR_URL,
@@ -26,9 +38,9 @@ import {
   getLangleyUrl,
 } from "../src/lib/links";
 import { extractSessionRequirements, normalizeCategory, sanitizeSessionNotes } from "../src/lib/normalize";
-import { fetchPoirierSessions, upsertPoirierSessions } from "../src/lib/ingest/poirier";
-import { fetchLangleySessions, upsertLangleySessions } from "../src/lib/ingest/activenet";
 import { checkAndDispatchAlerts, type TransitionedSession } from "../src/lib/alerts/dispatcher";
+
+export { runActiveNetIngest, runPerfectMindIngest, runDaySmartIngest };
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -215,36 +227,6 @@ async function once() {
     const report = await runIngestion(prisma, opts);
     const transitionedSessions: TransitionedSession[] = [...(report.transitionedSessions ?? [])];
 
-    // Arena-level sync for Poirier Sport & Leisure Complex
-    if (!opts.only?.length || opts.only.includes("poirier")) {
-      try {
-        console.log("\n▶ Arena-level sync: Poirier Sport & Leisure Complex [perfectmind]");
-        const windowFrom = new Date(Date.now() - 3 * 3_600_000);
-        const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
-        const poirierSessions = await fetchPoirierSessions(windowFrom, windowTo);
-        const { count, transitioned } = await upsertPoirierSessions(prisma, poirierSessions);
-        console.log(`  ✓ Poirier: ${count} verified sessions synchronized to database.`);
-        transitionedSessions.push(...transitioned);
-      } catch (poirierErr) {
-        console.error("  ✗ Poirier arena-level ingestion failed:", poirierErr);
-      }
-    }
-
-    // Arena-level sync for Township of Langley (George Preston & Aldergrove CUCC)
-    if (!opts.only?.length || opts.only.includes("george-preston") || opts.only.includes("aldergrove-cucc")) {
-      try {
-        console.log("\n▶ Arena-level sync: Township of Langley (George Preston & Aldergrove CUCC) [perfectmind]");
-        const windowFrom = new Date(Date.now() - 3 * 3_600_000);
-        const windowTo = new Date(Date.now() + (opts.days || 8) * 86_400_000);
-        const langleySessions = await fetchLangleySessions(windowFrom, windowTo);
-        const { count, transitioned } = await upsertLangleySessions(prisma, langleySessions);
-        console.log(`  ✓ Langley: ${count} verified live PerfectMind sessions synchronized to database.`);
-        transitionedSessions.push(...transitioned);
-      } catch (langleyErr) {
-        console.error("  ✗ Langley arena-level ingestion failed:", langleyErr);
-      }
-    }
-
     if (transitionedSessions.length > 0) {
       console.log(`\n🔔 Spot drop alerts: ${transitionedSessions.length} session(s) transitioned from 0 spots to > 0!`);
       const alertResult = await checkAndDispatchAlerts(transitionedSessions, prisma);
@@ -261,15 +243,21 @@ async function once() {
 }
 
 async function main() {
-  if (!intervalMin) {
-    const status = await once();
+  try {
+    if (!intervalMin) {
+      await once();
+      await prisma.$disconnect();
+      process.exit(0);
+    }
+    console.log(`Watch mode: syncing every ${intervalMin} min. Ctrl+C to stop.`);
+    for (;;) {
+      await once();
+      await new Promise((r) => setTimeout(r, intervalMin * 60_000));
+    }
+  } catch (err) {
+    console.error("Fatal error in main:", err);
     await prisma.$disconnect();
-    process.exit(status === "failed" ? 1 : 0);
-  }
-  console.log(`Watch mode: syncing every ${intervalMin} min. Ctrl+C to stop.`);
-  for (;;) {
-    await once();
-    await new Promise((r) => setTimeout(r, intervalMin * 60_000));
+    process.exit(1);
   }
 }
 
