@@ -27,8 +27,15 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
 
   if (!facility) return {};
 
-  const title = `${facility.name} Ice Schedule & Drop-In Times | IceFinder`;
-  const description = `Real-time ice schedule, stick & puck, drop-in hockey, and public skating times for ${facility.name}. Check live spots and book directly.`;
+  const facilitySeed = FACILITIES.find((f) => f.slug === facilitySlug);
+  const municipality = facility.municipality ?? facilitySeed?.municipality ?? "Metro Vancouver";
+
+  const hasMajorAlias = facility.aliases?.includes("8 Rinks");
+  const title = hasMajorAlias
+    ? `${facility.name} (Formerly 8 Rinks) Ice Schedule & Live Spots | IceFinder`
+    : `${facility.name} Ice Schedule & Live Drop-In Times | IceFinder`;
+
+  const description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${facility.name} in ${municipality}, BC. Check live open spots and register directly.`;
   const canonical = `https://www.icefinder.ca/rinks/${facilitySlug}`;
 
   return {
@@ -65,7 +72,7 @@ export default async function RinkPage({ params }: RouteProps) {
   }
 
   const facilitySeed = FACILITIES.find((f) => f.slug === facilitySlug);
-  const facilityMunicipality = facilitySeed?.municipality ?? "Metro Vancouver";
+  const facilityMunicipality = contact.municipality ?? facilitySeed?.municipality ?? "Metro Vancouver";
   const facilityAddress = facilitySeed?.address ?? `${contact.name}, ${facilityMunicipality}, BC`;
   const sheets = facilitySeed?.sheets ?? getFacilitySheets(facilitySlug);
   const municipalityTab = municipalityToTab(facilityMunicipality);
@@ -81,8 +88,11 @@ export default async function RinkPage({ params }: RouteProps) {
     return s.facilitySlug === facilitySlug && endMs > now && startMs <= in7Days;
   });
 
-  const title = `${contact.name} Ice Schedule & Drop-In Times | IceFinder`;
-  const description = `Real-time ice schedule, stick & puck, drop-in hockey, and public skating times for ${contact.name}. Check live spots and book directly.`;
+  const hasMajorAlias = contact.aliases?.includes("8 Rinks");
+  const title = hasMajorAlias
+    ? `${contact.name} (Formerly 8 Rinks) Ice Schedule & Live Spots | IceFinder`
+    : `${contact.name} Ice Schedule & Live Drop-In Times | IceFinder`;
+  const description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${contact.name} in ${facilityMunicipality}, BC. Check live open spots and register directly.`;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -104,6 +114,7 @@ export default async function RinkPage({ params }: RouteProps) {
         "@type": "SportsActivityLocation",
         "@id": `https://www.icefinder.ca/rinks/${facilitySlug}#location`,
         name: contact.name,
+        alternateName: contact.aliases || [],
         url: `https://www.icefinder.ca/rinks/${facilitySlug}`,
         telephone: contact.phone,
         address: {
@@ -150,7 +161,7 @@ export default async function RinkPage({ params }: RouteProps) {
       {
         "@type": "ItemList",
         name: `${contact.name} Upcoming Drop-In Ice Schedule`,
-        itemListElement: upcomingSessions.slice(0, 25).map((session, index) => ({
+        itemListElement: upcomingSessions.map((session, index) => ({
           "@type": "ListItem",
           position: index + 1,
           name: session.rawTitle,
@@ -158,15 +169,13 @@ export default async function RinkPage({ params }: RouteProps) {
           url: session.bookingUrl || `https://www.icefinder.ca/rinks/${facilitySlug}`,
         })),
       },
-      ...upcomingSessions
-        .slice(0, 15)
-        .map((session) =>
-          buildSportsEventSchema(session, {
-            name: contact.name,
-            slug: facilitySlug,
-            municipality: facilityMunicipality,
-          })
-        ),
+      ...upcomingSessions.map((session) =>
+        buildSportsEventSchema(session, {
+          name: contact.name,
+          slug: facilitySlug,
+          municipality: facilityMunicipality,
+        })
+      ),
     ],
   };
 
@@ -253,7 +262,7 @@ export default async function RinkPage({ params }: RouteProps) {
           scheduleUrl: contact.scheduleUrl,
           municipality: facilityMunicipality,
         }}
-        seoTitle={`${contact.name} Ice Schedule`}
+        seoTitle={title}
         seoDescription={description}
       />
     </>
