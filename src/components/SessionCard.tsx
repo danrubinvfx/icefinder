@@ -122,7 +122,7 @@ export function CapacityChip({ s }: { s: SessionDTO }) {
     return (
       <span
         title="First-come, first-served at the front desk. No online reservation required."
-        className="inline-flex h-7 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 text-xs font-semibold text-slate-600 ring-1 ring-slate-200"
+        className="inline-flex h-7 items-center gap-1.5 rounded-full bg-slate-100 px-2.5 text-xs font-semibold text-slate-800 ring-1 ring-slate-300"
       >
         <Footprints className="size-3.5" aria-hidden /> Walk-in · pay at door
       </span>
@@ -260,34 +260,34 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 </span>
               )}
               {s.source === "mock" && (
-                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-700">
                   Demo data
                 </span>
               )}
             </div>
 
             <div className="flex items-baseline gap-2">
-              <Clock className="size-4 shrink-0 translate-y-0.5 text-slate-400" aria-hidden />
-              <p className="text-lg font-bold tabular-nums tracking-tight text-slate-900">{formatTimeRange(s.startTime, s.endTime)}</p>
+              <Clock className="size-4 shrink-0 translate-y-0.5 text-slate-500" aria-hidden />
+              <p className="text-lg font-bold tabular-nums tracking-tight text-slate-900" suppressHydrationWarning>{formatTimeRange(s.startTime, s.endTime)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm text-slate-600" title={s.rawTitle}>
+              <p className="truncate text-sm font-medium text-slate-700" title={s.rawTitle}>
                 {s.rawTitle}
               </p>
               {hasNotesOrReqs && !isWalkIn && (
                 <button
                   type="button"
                   onClick={() => setModalOpen(true)}
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200/80 transition hover:bg-ice-50 hover:text-ice-700 hover:ring-ice-200 cursor-pointer"
+                  className="inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-300 transition hover:bg-ice-50 hover:text-ice-700 hover:ring-ice-200 cursor-pointer"
                   aria-label={`More info and requirements for ${s.rawTitle}`}
                 >
-                  <Info className="size-3" aria-hidden />
+                  <Info className="size-3.5" aria-hidden />
                   More Info
                 </button>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-medium text-slate-700">
               <span className="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2.5 py-1 font-semibold text-white">
                 <MapPin className="size-3" aria-hidden />
                 {s.facilityShort}
@@ -303,7 +303,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 <span className="inline-flex items-center gap-1">
                   <ShieldHalf className="size-3" aria-hidden />
                   Goalies {s.goaliesRegistered ?? "?"}/{s.goalieSpots}
-                  {s.isGoalieFree && <span className="font-semibold text-emerald-600">· free</span>}
+                  {s.isGoalieFree && <span className="font-semibold text-emerald-700">· free</span>}
                 </span>
               )}
               {s.source !== "schedule" && s.source !== "special_schedule" && s.totalSpots > 0 && (
@@ -330,13 +330,13 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               </div>
             ) : isWalkIn ? (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs font-medium text-slate-700">
                   First-come, first-served at the front desk. No online reservation required.
                 </p>
                 {s.facilitySlug === "poirier" && (
                   <Link
                     href="/schedules/coquitlam-poirier"
-                    className="text-[11px] font-bold text-teal-700 underline underline-offset-2 hover:text-teal-900"
+                    className="text-[11px] font-bold text-teal-800 underline underline-offset-2 hover:text-teal-950"
                   >
                     View Full Poirier Schedule Table
                   </Link>
@@ -351,7 +351,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 cursor-pointer"
+                className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 cursor-pointer"
               >
                 <Info className="size-3.5" aria-hidden />
                 Session Info
@@ -360,7 +360,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
+                className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-teal-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 cursor-pointer"
               >
                 Session Details
                 <Info className="size-3.5" aria-hidden />
@@ -370,7 +370,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 <button
                   type="button"
                   onClick={() => setAlertModalOpen(true)}
-                  className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 cursor-pointer"
+                  className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 cursor-pointer"
                 >
                   <Bell className="size-3.5" aria-hidden />
                   Spot Drop Alert
@@ -380,7 +380,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleOutboundClick}
-                  className="inline-flex h-10 shrink-0 items-center gap-1 rounded-xl bg-slate-100 px-2.5 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-200 focus:outline-none"
+                  className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1 rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-200 focus:outline-none cursor-pointer"
                   title="Open booking site"
                 >
                   Waitlist
@@ -393,7 +393,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleOutboundClick}
-                className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-ice-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2"
+                className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-ice-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2"
               >
                 {cta}
                 <ExternalLink className="size-3.5" aria-hidden />
@@ -401,7 +401,7 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
             )}
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-1.5 text-[11px] text-slate-400">
+        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-2 text-xs font-medium text-slate-600">
           <p suppressHydrationWarning>
             {isSpecial
               ? "⭐ Special Schedule · Offline Notice"
@@ -412,11 +412,11 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
           <button
             type="button"
             onClick={() => setReportModalOpen(true)}
-            className="inline-flex items-center gap-1 text-[11px] text-slate-400 hover:text-amber-600 transition cursor-pointer"
+            className="inline-flex min-h-[44px] items-center gap-1 text-xs text-slate-600 hover:text-amber-700 transition cursor-pointer"
             title="Report an issue with this session"
             aria-label={`Report an issue with ${s.rawTitle}`}
           >
-            <Flag className="size-3" aria-hidden />
+            <Flag className="size-3.5" aria-hidden />
             <span>Report issue</span>
           </button>
         </div>

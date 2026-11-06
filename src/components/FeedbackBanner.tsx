@@ -46,7 +46,7 @@ export function FeedbackBanner() {
           </span>
           <a
             href={FEEDBACK_MAILTO}
-            className="inline-flex shrink-0 items-center rounded-full bg-ice-500 px-2.5 py-0.5 text-xs font-semibold text-white shadow-xs transition hover:bg-ice-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full bg-ice-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs transition hover:bg-ice-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             Send Feedback
           </a>
@@ -55,7 +55,7 @@ export function FeedbackBanner() {
           type="button"
           onClick={handleDismiss}
           aria-label="Dismiss feedback banner"
-          className="shrink-0 rounded-md p-1 text-slate-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
+          className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center shrink-0 rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
         >
           <X className="size-4" aria-hidden="true" />
         </button>

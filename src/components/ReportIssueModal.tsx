@@ -144,7 +144,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-white/80 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-white/80 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="size-5" />
@@ -162,7 +162,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
               <p className="text-sm text-slate-600 max-w-xs mx-auto">
                 We have received your report and our team will investigate immediately.
               </p>
-              <p className="text-xs text-slate-400 pt-2">
+              <p className="text-xs text-slate-500 pt-2">
                 This window will close automatically...
               </p>
             </div>
@@ -170,7 +170,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
             <div className="space-y-4">
               {/* Session Summary Card */}
               <div className="rounded-xl bg-slate-50 p-3.5 ring-1 ring-slate-200/80 space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-700">
                   Target Session
                 </p>
                 <p className="text-sm font-bold text-slate-900 leading-snug">
@@ -178,18 +178,18 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                 </p>
                 <div className="flex flex-col gap-1 text-xs text-slate-600">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                    <MapPin className="size-3.5 shrink-0 text-slate-500" />
                     <span>
                       {session.facilityName}
                       {session.rink ? ` • ${session.rink}` : ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="size-3.5 shrink-0 text-slate-400" />
+                    <Calendar className="size-3.5 shrink-0 text-slate-500" />
                     <span>{formatDayHeading(session.startTime)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="size-3.5 shrink-0 text-slate-400" />
+                    <Clock className="size-3.5 shrink-0 text-slate-500" />
                     <span className="font-medium text-slate-800">
                       {formatTimeRange(session.startTime, session.endTime)}
                     </span>
@@ -211,7 +211,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     {ISSUE_OPTIONS.map((opt) => (
                       <label
                         key={opt.value}
-                        className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium cursor-pointer transition ${
+                        className={`flex min-h-[44px] items-center gap-2.5 rounded-xl border p-2.5 text-xs font-medium cursor-pointer transition ${
                           issueType === opt.value
                             ? "border-amber-500 bg-amber-50/50 text-slate-900 ring-1 ring-amber-500/30"
                             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
@@ -237,7 +237,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     htmlFor={detailsInputId}
                     className="block text-xs font-semibold text-slate-700 mb-1"
                   >
-                    Additional details <span className="text-slate-400 font-normal">(optional)</span>
+                    Additional details <span className="text-slate-600 font-normal">(optional)</span>
                   </label>
                   <textarea
                     id={detailsInputId}
@@ -246,7 +246,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     onChange={(e) => setDetails(e.target.value)}
                     placeholder="e.g., The registration link leads to an expired catalog activity"
                     disabled={status === "loading"}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:opacity-75 resize-none"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-500 shadow-2xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:opacity-75 resize-none"
                   />
                 </div>
 
@@ -256,7 +256,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     htmlFor={emailInputId}
                     className="block text-xs font-semibold text-slate-700 mb-1"
                   >
-                    Your email <span className="text-slate-400 font-normal">(optional, if you&apos;d like an update)</span>
+                    Your email <span className="text-slate-600 font-normal">(optional, if you&apos;d like an update)</span>
                   </label>
                   <input
                     id={emailInputId}
@@ -265,7 +265,7 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="skater@example.com"
                     disabled={status === "loading"}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:opacity-75"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 placeholder:text-slate-500 shadow-2xs focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 disabled:bg-slate-100 disabled:opacity-75"
                   />
                 </div>
 
@@ -280,14 +280,14 @@ export function ReportIssueModal({ session, isOpen, onClose }: ReportIssueModalP
                     type="button"
                     onClick={onClose}
                     disabled={status === "loading"}
-                    className="w-1/3 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50 cursor-pointer"
+                    className="w-1/3 min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={status === "loading"}
-                    className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer transition"
+                    className="w-2/3 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer transition"
                   >
                     {status === "loading" ? (
                       <>

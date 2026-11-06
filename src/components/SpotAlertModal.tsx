@@ -142,7 +142,7 @@ export function SpotAlertModal({ session, isOpen, onClose }: SpotAlertModalProps
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-slate-400 hover:bg-white/80 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-2 text-slate-600 hover:bg-white/80 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="size-5" />
@@ -160,7 +160,7 @@ export function SpotAlertModal({ session, isOpen, onClose }: SpotAlertModalProps
               <p className="text-sm text-slate-600 max-w-xs mx-auto">
                 We&apos;ll email <span className="font-semibold text-slate-900">{email}</span> the moment a spot opens up for this session.
               </p>
-              <p className="text-xs text-slate-400 pt-2">
+              <p className="text-xs text-slate-500 pt-2">
                 This window will close automatically...
               </p>
             </div>
@@ -173,18 +173,18 @@ export function SpotAlertModal({ session, isOpen, onClose }: SpotAlertModalProps
                 </p>
                 <div className="flex flex-col gap-1 text-xs text-slate-600">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="size-3.5 shrink-0 text-slate-400" />
+                    <MapPin className="size-3.5 shrink-0 text-slate-500" />
                     <span>
                       {session.facilityName}
                       {session.rink ? ` • ${session.rink}` : ""}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="size-3.5 shrink-0 text-slate-400" />
+                    <Calendar className="size-3.5 shrink-0 text-slate-500" />
                     <span>{formatDayHeading(session.startTime)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Clock className="size-3.5 shrink-0 text-slate-400" />
+                    <Clock className="size-3.5 shrink-0 text-slate-500" />
                     <span className="font-medium text-slate-800">
                       {formatTimeRange(session.startTime, session.endTime)}
                     </span>
@@ -218,7 +218,7 @@ export function SpotAlertModal({ session, isOpen, onClose }: SpotAlertModalProps
                     placeholder="skater@example.com"
                     autoFocus
                     disabled={status === "loading"}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-2xs focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-100 disabled:opacity-75"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-500 shadow-2xs focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:bg-slate-100 disabled:opacity-75"
                   />
                 </div>
 
@@ -233,14 +233,14 @@ export function SpotAlertModal({ session, isOpen, onClose }: SpotAlertModalProps
                     type="button"
                     onClick={onClose}
                     disabled={status === "loading"}
-                    className="w-1/3 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50 cursor-pointer"
+                    className="w-1/3 min-h-[44px] rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 disabled:opacity-50 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={status === "loading" || !email.trim()}
-                    className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer transition"
+                    className="w-2/3 min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:bg-slate-300 disabled:cursor-not-allowed cursor-pointer transition"
                   >
                     {status === "loading" ? (
                       <>

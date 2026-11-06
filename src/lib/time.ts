@@ -10,9 +10,9 @@ const dowFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, weekday: "
 const dayNumFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, day: "numeric" });
 
 export const localYmd = (d: Date | string) => ymdFmt.format(new Date(d));
-export const formatTime = (d: Date | string) => timeFmt.format(new Date(d));
-export const formatDayHeading = (d: Date | string) => dayFmt.format(new Date(d));
-export const formatDayNumber = (d: Date | string) => dayNumFmt.format(new Date(d));
+export const formatTime = (d: Date | string) => timeFmt.format(new Date(d)).replace(/\u202f/g, " ");
+export const formatDayHeading = (d: Date | string) => dayFmt.format(new Date(d)).replace(/\u202f/g, " ");
+export const formatDayNumber = (d: Date | string) => dayNumFmt.format(new Date(d)).replace(/\u202f/g, " ");
 
 const hourFmt = new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "numeric", hourCycle: "h23" });
 export const localHour = (d: Date | string) => Number(hourFmt.format(new Date(d)));
@@ -33,7 +33,7 @@ export function dowOfYmd(ymd: string) {
 }
 
 export function shortDow(d: Date | string) {
-  return dowFmt.format(new Date(d));
+  return dowFmt.format(new Date(d)).replace(/\u202f/g, " ");
 }
 
 /** The set of local dates that make up "this weekend" (today included if it's Sat/Sun). */

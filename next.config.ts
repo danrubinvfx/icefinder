@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@prisma/client", "prisma"],
+  experimental: {
+    fallbackNodePolyfills: false,
+    optimizePackageImports: ["lucide-react", "date-fns", "date-fns-tz"],
+  },
   async rewrites() {
     return [
       {

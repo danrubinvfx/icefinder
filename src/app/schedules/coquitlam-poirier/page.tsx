@@ -552,19 +552,19 @@ export default function PoirierSchedulePage() {
 
       {/* Quick Navigation Anchor Bar */}
       <nav aria-label="Schedule Day Navigation" className="mt-8 flex flex-wrap items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-        <span className="text-slate-400 font-bold uppercase tracking-wider pr-1 text-[11px]">Jump to day:</span>
+        <span className="text-slate-600 font-bold uppercase tracking-wider pr-1 text-[11px]">Jump to day:</span>
         {SCHEDULE_DAYS.map((d) => (
           <a
             key={d.id}
             href={`#${d.id}`}
-            className="rounded-lg bg-white px-3 py-1.5 font-bold text-slate-700 shadow-2xs ring-1 ring-slate-200 transition hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500"
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-white px-3 py-1.5 font-bold text-slate-700 shadow-2xs ring-1 ring-slate-200 transition hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500"
           >
             {d.dayShort}
           </a>
         ))}
         <a
           href="#holiday-overrides"
-          className="rounded-lg bg-amber-50 px-3 py-1.5 font-bold text-amber-900 ring-1 ring-amber-200 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
+          className="inline-flex min-h-[44px] items-center rounded-lg bg-amber-50 px-3 py-1.5 font-bold text-amber-900 ring-1 ring-amber-200 transition hover:bg-amber-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
         >
           Holiday Overrides
         </a>
@@ -596,7 +596,7 @@ export default function PoirierSchedulePage() {
             <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-sm text-slate-700">
                 <thead>
-                  <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <tr className="border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600">
                     <th scope="col" className="py-2.5 pr-4">Time Window</th>
                     <th scope="col" className="py-2.5 px-3">Session &amp; Category</th>
                     <th scope="col" className="py-2.5 px-3">Price</th>
@@ -780,7 +780,7 @@ export default function PoirierSchedulePage() {
           </li>
         </ul>
 
-        <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-slate-500 text-[11px]">
+        <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 text-slate-600 text-[11px]">
           <span>City of Coquitlam Parks, Recreation &amp; Culture Services · Poirier Sport &amp; Leisure Complex</span>
           <a
             href="https://www.coquitlam.ca/384/Poirier-Sport-and-Leisure-Complex"

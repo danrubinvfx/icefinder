@@ -189,7 +189,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 type="button"
                 onClick={onClose}
                 aria-label="Close session details"
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-amber-100 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1.5 text-slate-600 transition hover:bg-amber-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 cursor-pointer"
               >
                 <X className="size-5" aria-hidden />
               </button>
@@ -211,16 +211,16 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 <div className="flex items-start gap-2.5">
                   <Clock className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">🕒 Time</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">🕒 Time</p>
                     <p className="font-bold text-slate-900">{formatTimeRange(session.startTime, session.endTime)}</p>
-                    <p className="text-xs font-medium text-slate-500">{formatDayHeading(session.startTime)}</p>
+                    <p className="text-xs font-medium text-slate-600">{formatDayHeading(session.startTime)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5 border-t border-slate-200/70 pt-2.5">
                   <DollarSign className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">💵 Admission</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">💵 Admission</p>
                     <p className="font-bold text-slate-900">
                       {session.cost !== null ? `$${session.cost.toFixed(2)} / session (Coaches Free)` : "$9.00 / session (Coaches Free)"}
                     </p>
@@ -230,16 +230,16 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 <div className="flex items-start gap-2.5 border-t border-slate-200/70 pt-2.5">
                   <MapPin className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">📍 Sheet</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">📍 Sheet</p>
                     <p className="font-bold text-slate-900">{sheetName}</p>
-                    <p className="text-xs font-medium text-slate-500">{session.facilityName}</p>
+                    <p className="text-xs font-medium text-slate-600">{session.facilityName}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-2.5 border-t border-slate-200/70 pt-2.5">
                   <AlertCircle className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">⛸️ Restrictions</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">⛸️ Restrictions</p>
                     <p className="text-xs font-semibold text-slate-800 leading-snug">
                       Figure skates only; prior figure skating / StarSkate experience required.
                     </p>
@@ -261,7 +261,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
               {/* Attendance Guidelines */}
               {cleanNotes && (
                 <div className="space-y-1.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                     Attendance Guidelines
                   </p>
                   <p className="whitespace-pre-line text-xs leading-relaxed text-slate-700">
@@ -273,9 +273,9 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
               {/* Facility Address & Actions */}
               <div className="space-y-2.5 rounded-xl border border-slate-200 p-3.5">
                 <div className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-slate-500" aria-hidden />
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-slate-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Facility Address</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Facility Address</p>
                     <p className="font-semibold text-slate-800">{facilityAddress}</p>
                   </div>
                 </div>
@@ -386,7 +386,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 type="button"
                 onClick={onClose}
                 aria-label="Close session details"
-                className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-200/60 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-200/60 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 cursor-pointer"
               >
                 <X className="size-5" aria-hidden />
               </button>
@@ -397,7 +397,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 <div className="flex items-start gap-2.5">
                   <Calendar className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Date &amp; Time Window</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Date &amp; Time Window</p>
                     <p className="font-bold text-slate-900">{formatDayHeading(session.startTime)}</p>
                     <p className="font-semibold tabular-nums text-slate-700">{formatTimeRange(session.startTime, session.endTime)}</p>
                   </div>
@@ -406,7 +406,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 <div className="flex items-start gap-2.5 border-t border-slate-200/70 pt-2.5">
                   <Building2 className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Facility &amp; Arena Pad</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Facility &amp; Arena Pad</p>
                     <p className="font-bold text-slate-900">{session.facilityName}</p>
                     <p className="text-xs font-medium text-slate-600">{session.rink ?? "Main Arena Pad"}</p>
                   </div>
@@ -415,7 +415,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
                 <div className="flex items-start gap-2.5 border-t border-slate-200/70 pt-2.5">
                   <DollarSign className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Admission Price</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Admission Price</p>
                     <p className="font-bold text-slate-900">{priceDisplay}</p>
                   </div>
                 </div>
@@ -442,7 +442,7 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
 
               {cleanNotes && (
                 <div className="space-y-1.5 rounded-xl border border-slate-200 bg-white p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
                     Facility Program Notes &amp; Policies
                   </p>
                   <div className="whitespace-pre-line text-xs leading-relaxed text-slate-700">
@@ -465,9 +465,9 @@ export function SessionDetailsModal({ session, isOpen, onClose }: SessionDetails
 
               <div className="space-y-2.5 rounded-xl border border-slate-200 p-3.5">
                 <div className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 size-4 shrink-0 text-slate-500" aria-hidden />
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-slate-600" aria-hidden />
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Facility Address</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Facility Address</p>
                     <p className="font-semibold text-slate-800">{facilityAddress}</p>
                   </div>
                 </div>

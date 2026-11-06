@@ -48,15 +48,15 @@ function Pill({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 ${
-        active ? "bg-ice-900 text-white shadow-sm" : "bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-100"
+      className={`inline-flex min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer ${
+        active ? "bg-ice-900 text-white shadow-sm" : "bg-white text-slate-800 ring-1 ring-slate-300 hover:bg-slate-100"
       }`}
     >
       {children}
       {count !== undefined && (
         <span
           className={`min-w-5 rounded-full px-1.5 text-center text-[11px] tabular-nums ${
-            active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
+            active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-700 font-bold"
           }`}
         >
           {count}
@@ -83,8 +83,8 @@ function Toggle({
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full pl-1.5 pr-3.5 text-sm font-semibold ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 ${
-        checked ? "bg-emerald-50 text-emerald-800 ring-emerald-300" : "bg-white text-slate-700 ring-slate-200 hover:bg-slate-100"
+      className={`inline-flex min-h-[48px] shrink-0 items-center gap-2 whitespace-nowrap rounded-full pl-2 pr-4 text-sm font-semibold ring-1 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer ${
+        checked ? "bg-emerald-50 text-emerald-800 ring-emerald-300" : "bg-white text-slate-800 ring-slate-300 hover:bg-slate-100"
       }`}
     >
       <span className={`relative h-6 w-10 rounded-full transition ${checked ? "bg-emerald-500" : "bg-slate-300"}`} aria-hidden>
@@ -129,6 +129,7 @@ export function IceFinderApp({
   const [feed, setFeed] = useState(initialFeed);
   // `now` starts at the server render time so the first client render matches SSR exactly.
   const [now, setNow] = useState(() => new Date(initialFeed.generatedAt).getTime());
+  const [mounted, setMounted] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [municipality, setMunicipality] = useState<Municipality>(
@@ -203,6 +204,7 @@ export function IceFinderApp({
   }, [refreshing, router]);
 
   useEffect(() => {
+    setMounted(true);
     setNow(Date.now());
     const tick = setInterval(() => setNow(Date.now()), 30_000);
     const poll = setInterval(refresh, REFRESH_MS);
@@ -381,13 +383,13 @@ export function IceFinderApp({
       {/* ── Header ───────────────────────────────────────────── */}
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur supports-[backdrop-filter]:bg-slate-50/75">
         <div className="flex h-14 items-center gap-3 px-4">
-          <Link href="/" className="flex items-center gap-2" aria-label="IceFinder home">
+          <Link href="/" className="inline-flex min-h-[48px] items-center gap-2" aria-label="IceFinder home">
             <span className="grid size-9 place-items-center rounded-xl bg-ice-600 text-white shadow-sm ring-1 ring-ice-700/20">
               <Snowflake className="size-5" aria-hidden />
             </span>
             <div className="leading-tight">
               <span className="text-base font-extrabold tracking-tight text-slate-900">IceFinder</span>
-              <span className="ml-1.5 hidden text-xs font-semibold text-slate-400 min-[420px]:inline">Metro Van</span>
+              <span className="ml-1.5 hidden text-xs font-semibold text-slate-600 min-[420px]:inline">Metro Van</span>
             </div>
           </Link>
 
@@ -402,7 +404,7 @@ export function IceFinderApp({
                   setMunicipality(e.target.value as Municipality);
                   setFacility("all");
                 }}
-                className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none"
+                className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none cursor-pointer"
               >
                 {MUNICIPALITIES.map((m) => (
                   <option key={m} value={m}>
@@ -410,7 +412,7 @@ export function IceFinderApp({
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-slate-600" aria-hidden />
             </label>
           </div>
 
@@ -422,19 +424,23 @@ export function IceFinderApp({
               type="button"
               onClick={handleManualRefresh}
               disabled={refreshing}
-              title={lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
+              title={mounted && lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
               aria-label="Refresh feed"
-              className="inline-flex h-9 items-center gap-2 rounded-full bg-white px-3 text-xs font-semibold text-slate-600 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer disabled:cursor-not-allowed"
+              className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center gap-2 rounded-full bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer disabled:cursor-not-allowed"
             >
               <span
                 className={`size-2 rounded-full ${
-                  refreshing ? "bg-ice-500 animate-pulse" : syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-400"
+                  refreshing ? "bg-ice-500 animate-pulse" : syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-500"
                 }`}
                 aria-hidden
               />
               <span className="tabular-nums" suppressHydrationWarning>
                 {refreshing ? (
                   "Checking live ice..."
+                ) : !mounted ? (
+                  <>
+                    <span className="hidden min-[400px]:inline">Live · </span>synced
+                  </>
                 ) : lastSyncAt ? (
                   <>
                     <span className="hidden min-[400px]:inline">Live · </span>synced {formatTime(lastSyncAt)}
@@ -535,11 +541,11 @@ export function IceFinderApp({
           />
           <label className="relative shrink-0">
             <span className="sr-only">Facility</span>
-            <Building2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <Building2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" aria-hidden />
             <select
               value={facility}
               onChange={(e) => setFacility(e.target.value)}
-              className="h-9 appearance-none rounded-full bg-white pl-9 pr-8 text-sm font-semibold text-slate-700 ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-ice-500"
+              className="min-h-[48px] appearance-none rounded-full bg-white pl-9 pr-8 text-sm font-semibold text-slate-800 ring-1 ring-slate-300 focus:outline-none focus:ring-2 focus:ring-ice-500 cursor-pointer"
             >
               <option value="all">
                 {municipality === "All Metro Van" ? "All arenas" : `All ${municipality} arenas`}
@@ -550,7 +556,7 @@ export function IceFinderApp({
                 </option>
               ))}
             </select>
-            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" aria-hidden />
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" aria-hidden />
           </label>
         </div>
       </header>
@@ -629,7 +635,7 @@ export function IceFinderApp({
         {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (
           <div className="sticky top-14 z-10 -mx-4 border-b border-slate-200/80 bg-slate-50/95 px-4 py-2 backdrop-blur">
             <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
-              <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-slate-400 mr-1">
+              <span className="shrink-0 text-xs font-bold uppercase tracking-wider text-slate-600 mr-1">
                 Jump to:
               </span>
               {selectedDays.map((d) => {
@@ -641,14 +647,14 @@ export function IceFinderApp({
                     key={d}
                     type="button"
                     onClick={() => scrollToDay(d)}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 hover:text-ice-600 transition"
+                    className="inline-flex min-h-[48px] shrink-0 items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-semibold text-slate-800 shadow-2xs ring-1 ring-slate-300 hover:bg-slate-100 hover:text-ice-600 transition cursor-pointer"
                   >
                     <span>{shortDow(dayDate)}</span>
                     <span className="font-bold">{formatDayNumber(dayDate)}</span>
                     {isCurrentToday && (
                       <span className="text-[10px] uppercase font-bold text-ice-600 ml-0.5">· today</span>
                     )}
-                    <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.2 text-[10px] text-slate-500 tabular-nums">
+                    <span className="ml-1 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-700 font-bold tabular-nums">
                       {count}
                     </span>
                   </button>
@@ -660,9 +666,9 @@ export function IceFinderApp({
 
         {visible.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-xs">
-            <SearchX className="mx-auto size-10 text-slate-300" aria-hidden />
+            <SearchX className="mx-auto size-10 text-slate-400" aria-hidden />
             <h2 className="mt-3 text-base font-bold text-slate-800">No sessions match your filters</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-600">
               {dateMode === "today"
                 ? "Today's sessions may have already finished for the day. Check the upcoming week, switch municipality, or clear filters."
                 : "Try widening your date range, switching municipality, or turning off \u201cOpen Spots Only\u201d."}
@@ -672,7 +678,7 @@ export function IceFinderApp({
                 <button
                   type="button"
                   onClick={() => setDateMode("week")}
-                  className="h-9 rounded-full bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm hover:bg-ice-700"
+                  className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-ice-600 px-5 text-sm font-semibold text-white shadow-sm hover:bg-ice-700 cursor-pointer"
                 >
                   View Next 7 Days
                 </button>
@@ -680,7 +686,7 @@ export function IceFinderApp({
               <button
                 type="button"
                 onClick={resetFilters}
-                className="h-9 rounded-full bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-700"
+                className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-slate-900 px-5 text-sm font-semibold text-white hover:bg-slate-700 cursor-pointer"
               >
                 Reset filters
               </button>
@@ -692,10 +698,10 @@ export function IceFinderApp({
               {(groups.length > 1 || dateMode !== "today") && (
                 <div id={`day-${day}`} className="scroll-mt-36 pt-2 pb-1">
                   <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                    <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800">
+                    <h2 className="text-sm font-bold uppercase tracking-wide text-slate-800" suppressHydrationWarning>
                       {day === today ? `Today · ${formatDayHeading(sessions[0].startTime)}` : formatDayHeading(sessions[0].startTime)}
                     </h2>
-                    <span className="text-xs font-semibold text-slate-400">
+                    <span className="text-xs font-semibold text-slate-600">
                       {sessions.length} session{sessions.length === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -714,7 +720,7 @@ export function IceFinderApp({
             <h2 id="arenas-heading" className="text-base font-bold uppercase tracking-wider text-slate-900">
               Metro Vancouver Arenas &amp; Drop-In Facilities
             </h2>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               Real-time drop-in hockey, stick &amp; puck, and figure skating buy-on schedules tracked across Burnaby, Vancouver, North Shore, Richmond, Tri-Cities, Surrey, Delta, Langley, and New West.
             </p>
           </div>
@@ -725,7 +731,7 @@ export function IceFinderApp({
               if (munFacilities.length === 0) return null;
               return (
                 <div key={mun} id={mun.toLowerCase().replace(/\s+/g, "-")} className="scroll-mt-24 space-y-2">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
                     {mun} Arenas &amp; Schedules
                   </h3>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -740,12 +746,12 @@ export function IceFinderApp({
                             <h2 className="text-sm font-bold text-slate-900">
                               {fac.name}
                             </h2>
-                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                              <MapPin className="size-3 shrink-0 text-slate-400" aria-hidden />
+                            <p className="mt-1 flex items-center gap-1 text-xs text-slate-600">
+                              <MapPin className="size-3 shrink-0 text-slate-500" aria-hidden />
                               <span className="truncate">{fac.address}</span>
                             </p>
                           </div>
-                          <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
                             {fac.municipality}
                           </span>
                         </div>
@@ -763,7 +769,7 @@ export function IceFinderApp({
                               setFacility(fac.slug);
                               window.scrollTo({ top: 0, behavior: "smooth" });
                             }}
-                            className="text-xs font-semibold text-ice-600 hover:text-ice-800 cursor-pointer"
+                            className="inline-flex min-h-[44px] items-center text-xs font-semibold text-ice-700 hover:text-ice-900 cursor-pointer"
                           >
                             Filter ice times for {fac.shortName} &rarr;
                           </button>
