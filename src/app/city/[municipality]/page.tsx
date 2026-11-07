@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IceFinderApp } from "@/components/IceFinderApp";
 import { CATEGORY_LABELS, matchesMunicipalityFilter, type Municipality } from "@/lib/domain";
+import { FACILITY_CONTACTS } from "@/lib/facilities";
 import { getFeed } from "@/lib/queries";
 import { buildSportsEventSchema } from "@/lib/schema";
 import { formatDayHeading, formatTimeRange } from "@/lib/time";
@@ -165,6 +166,13 @@ export default async function MunicipalityPage({ params }: RouteProps) {
   const feed = await getFeed();
   const facilityMap = new Map(feed.facilities.map((f) => [f.slug, f]));
 
+  const municipalFacilities = Object.values(FACILITY_CONTACTS).filter(
+    (fac) =>
+      fac.municipality.toLowerCase() === slug ||
+      fac.municipality.toLowerCase() === cityName.toLowerCase() ||
+      matchesMunicipalityFilter(fac.municipality, tab)
+  );
+
   // Upcoming 48 hours filter for this municipality
   const now = Date.now();
   const in48Hours = now + 48 * 60 * 60 * 1000;
@@ -254,45 +262,94 @@ export default async function MunicipalityPage({ params }: RouteProps) {
           </p>
         ) : (
           <ul>
-            {upcomingSessions.map((session) => (
-              <li key={session.id}>
-                <article>
-                  <h3>{session.rawTitle}</h3>
-                  <p>
-                    <strong>Facility:</strong> {session.facilityName}
-                    {session.rink ? ` (${session.rink})` : ""}
-                  </p>
-                  <p>
-                    <strong>Category:</strong>{" "}
-                    {CATEGORY_LABELS[session.category] ?? session.category}
-                  </p>
-                  <p>
-                    <strong>Time:</strong>{" "}
-                    <time dateTime={session.startTime}>
-                      {formatDayHeading(session.startTime)},{" "}
-                      {formatTimeRange(session.startTime, session.endTime)}
-                    </time>
-                  </p>
-                  <p>
-                    <strong>Spots:</strong>{" "}
-                    {session.openSpots > 0
-                      ? `${session.openSpots} spots open`
-                      : "Full / Waitlist only"}
-                    {hasGoalieNeeded(session) ? " · Goalie Spot Available" : ""}
-                    {isGoalieFree(session) ? " · Free for goalies" : ""}
-                  </p>
-                  {session.bookingUrl && (
+            {upcomingSessions.map((session) => {
+              const sessionWithAliases = {
+                ...session,
+                facility_slug: session.facilitySlug,
+                start_time: session.startTime,
+              };
+              const facility =
+                facilityMap.get(sessionWithAliases.facility_slug) ??
+                FACILITY_CONTACTS[sessionWithAliases.facility_slug] ?? {
+                  name: session.facilityName,
+                  slug: sessionWithAliases.facility_slug,
+                };
+
+              return (
+                <li key={session.id}>
+                  <article>
+                    <h3>{session.rawTitle}</h3>
                     <p>
-                      <a href={session.bookingUrl}>
-                        Register directly for {session.rawTitle} at {session.facilityName}
+                      <strong>Facility:</strong> {session.facilityName}
+                      {session.rink ? ` (${session.rink})` : ""}
+                    </p>
+                    <p>
+                      <a
+                        href={`/rinks/${sessionWithAliases.facility_slug}`}
+                        className="text-xs text-sky-400 hover:underline"
+                      >
+                        View full {facility.name} schedule & live spots →
                       </a>
                     </p>
-                  )}
-                </article>
-              </li>
-            ))}
+                    <p>
+                      <strong>Category:</strong>{" "}
+                      {CATEGORY_LABELS[session.category] ?? session.category}
+                    </p>
+                    <p>
+                      <strong>Time:</strong>{" "}
+                      <time dateTime={sessionWithAliases.start_time}>
+                        {formatDayHeading(session.startTime)},{" "}
+                        {formatTimeRange(session.startTime, session.endTime)}
+                      </time>
+                    </p>
+                    <p>
+                      <strong>Spots:</strong>{" "}
+                      {session.openSpots > 0
+                        ? `${session.openSpots} spots open`
+                        : "Full / Waitlist only"}
+                      {hasGoalieNeeded(session) ? " · Goalie Spot Available" : ""}
+                      {isGoalieFree(session) ? " · Free for goalies" : ""}
+                    </p>
+                    {session.bookingUrl && (
+                      <p>
+                        <a href={session.bookingUrl}>
+                          Register directly for {session.rawTitle} at {session.facilityName}
+                        </a>
+                      </p>
+                    )}
+                  </article>
+                </li>
+              );
+            })}
           </ul>
         )}
+
+        {/* Municipal schedule cards for link equity */}
+        <nav aria-label={`${cityName} Arenas and Schedules`}>
+          <h3>{cityName} Arena Schedules</h3>
+          <ul>
+            {municipalFacilities.map((facility) => {
+              const sessionWithSlug = {
+                facility_slug: facility.slug,
+              };
+              return (
+                <li key={facility.slug}>
+                  <article>
+                    <h4>{facility.name}</h4>
+                    <p>
+                      <a
+                        href={`/rinks/${sessionWithSlug.facility_slug}`}
+                        className="text-xs text-sky-400 hover:underline"
+                      >
+                        View full {facility.name} schedule & live spots →
+                      </a>
+                    </p>
+                  </article>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
       </section>
 
       {/* Interactive live app pre-filtered for this municipality */}

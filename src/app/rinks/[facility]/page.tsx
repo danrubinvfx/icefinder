@@ -32,11 +32,18 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   const municipality = facility.municipality ?? facilitySeed?.municipality ?? "Metro Vancouver";
 
   const hasMajorAlias = facility.aliases?.includes("8 Rinks");
-  const title = hasMajorAlias
-    ? `${facility.name} (Formerly 8 Rinks) Ice Schedule & Live Spots | IceFinder`
-    : `${facility.name} Ice Schedule & Live Drop-In Times | IceFinder`;
+  let title = hasMajorAlias
+    ? `${facility.name} (Formerly 8 Rinks) Skating Schedule & Drop-In Times | IceFinder`
+    : `${facility.name} Skating Schedule & Drop-In Times | IceFinder`;
 
-  const description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${facility.name} in ${municipality}, BC. Check live open spots and register directly.`;
+  let description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${facility.name} in ${municipality}, BC. Check live open spots and register directly.`;
+
+  if (facilitySlug === "bill-copeland") {
+    title = "Bill Copeland Arena Skating Schedule & Drop-In Times | IceFinder";
+    description =
+      "Real-time skating schedule, stick & puck, and drop-in times for Bill Copeland Sports Centre in Burnaby, BC. Check live open spots and register directly.";
+  }
+
   const canonical = `https://www.icefinder.ca/rinks/${facilitySlug}`;
 
   return {
@@ -90,10 +97,16 @@ export default async function RinkPage({ params }: RouteProps) {
   });
 
   const hasMajorAlias = contact.aliases?.includes("8 Rinks");
-  const title = hasMajorAlias
-    ? `${contact.name} (Formerly 8 Rinks) Ice Schedule & Live Spots | IceFinder`
-    : `${contact.name} Ice Schedule & Live Drop-In Times | IceFinder`;
-  const description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${contact.name} in ${facilityMunicipality}, BC. Check live open spots and register directly.`;
+  let title = hasMajorAlias
+    ? `${contact.name} (Formerly 8 Rinks) Skating Schedule & Drop-In Times | IceFinder`
+    : `${contact.name} Skating Schedule & Drop-In Times | IceFinder`;
+  let description = `Real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skating times at ${contact.name} in ${facilityMunicipality}, BC. Check live open spots and register directly.`;
+
+  if (facilitySlug === "bill-copeland") {
+    title = "Bill Copeland Arena Skating Schedule & Drop-In Times | IceFinder";
+    description =
+      "Real-time skating schedule, stick & puck, and drop-in times for Bill Copeland Sports Centre in Burnaby, BC. Check live open spots and register directly.";
+  }
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -208,45 +221,65 @@ export default async function RinkPage({ params }: RouteProps) {
             schedules update automatically as municipal recreation centres release open ice.
           </p>
         ) : (
-          <ul>
-            {upcomingSessions.map((session) => (
-              <li key={session.id}>
-                <article>
-                  <h3>{session.rawTitle}</h3>
-                  <p>
-                    <strong>Facility:</strong> {session.facilityName}
-                    {session.rink ? ` (${session.rink})` : ""}
-                  </p>
-                  <p>
-                    <strong>Category:</strong>{" "}
-                    {CATEGORY_LABELS[session.category] ?? session.category}
-                  </p>
-                  <p>
-                    <strong>Time:</strong>{" "}
-                    <time dateTime={session.startTime}>
-                      {formatDayHeading(session.startTime)},{" "}
-                      {formatTimeRange(session.startTime, session.endTime)}
-                    </time>
-                  </p>
-                  <p>
-                    <strong>Spots:</strong>{" "}
-                    {session.openSpots > 0
-                      ? `${session.openSpots} spots open`
-                      : "Full / Waitlist only"}
-                    {hasGoalieNeeded(session) ? " · Goalie Spot Available" : ""}
-                    {isGoalieFree(session) ? " · Free for goalies" : ""}
-                  </p>
-                  {session.bookingUrl && (
-                    <p>
-                      <a href={session.bookingUrl}>
-                        Register directly for {session.rawTitle} at {session.facilityName}
-                      </a>
-                    </p>
-                  )}
-                </article>
-              </li>
-            ))}
-          </ul>
+          <table>
+            <caption>Upcoming {contact.name} 7-Day Drop-In Skating &amp; Hockey Schedule</caption>
+            <thead>
+              <tr>
+                <th scope="col">Date &amp; Time</th>
+                <th scope="col">Activity</th>
+                <th scope="col">Category</th>
+                <th scope="col">Rink / Sheet</th>
+                <th scope="col">Available Spots</th>
+                <th scope="col">Registration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {upcomingSessions.map((session) => {
+                const sessionWithAliases = {
+                  ...session,
+                  start_time: session.startTime,
+                  facility_slug: session.facilitySlug,
+                };
+                const categoryLabel = CATEGORY_LABELS[session.category] ?? session.category;
+                const spotsLabel =
+                  session.openSpots > 0
+                    ? `${session.openSpots} spots open`
+                    : "Full / Waitlist only";
+                const goalieExtra = hasGoalieNeeded(session)
+                  ? " · Goalie Spot Available"
+                  : isGoalieFree(session)
+                  ? " · Free for goalies"
+                  : "";
+
+                return (
+                  <tr key={session.id}>
+                    <td>
+                      <time dateTime={sessionWithAliases.start_time}>
+                        {formatDayHeading(session.startTime)},{" "}
+                        {formatTimeRange(session.startTime, session.endTime)}
+                      </time>
+                    </td>
+                    <td>{session.rawTitle}</td>
+                    <td>{categoryLabel}</td>
+                    <td>{session.rink ? `${session.facilityName} (${session.rink})` : session.facilityName}</td>
+                    <td>
+                      {spotsLabel}
+                      {goalieExtra}
+                    </td>
+                    <td>
+                      {session.bookingUrl ? (
+                        <a href={session.bookingUrl}>
+                          Register directly for {session.rawTitle} at {session.facilityName}
+                        </a>
+                      ) : (
+                        "Drop-in at door"
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </section>
 

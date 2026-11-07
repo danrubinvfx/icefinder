@@ -803,7 +803,7 @@ export function IceFinderApp({
                           <span className="rounded bg-pink-50 px-1.5 py-0.5 font-medium text-pink-700">Figure Buy-ons</span>
                           <span className="rounded bg-teal-50 px-1.5 py-0.5 font-medium text-teal-700">Public Skate</span>
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -815,6 +815,12 @@ export function IceFinderApp({
                           >
                             Filter ice times for {fac.shortName} &rarr;
                           </button>
+                          <a
+                            href={`/rinks/${fac.slug}`}
+                            className="text-xs text-sky-400 hover:underline"
+                          >
+                            View full {fac.name} schedule & live spots →
+                          </a>
                         </div>
                       </article>
                     ))}
