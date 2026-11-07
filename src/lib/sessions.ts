@@ -32,21 +32,16 @@ export type DivisionTag =
   | "40+"
   | "50+ Senior"
   | "Women / Female"
-  | "Youth"
-  | "All Ages";
-
-export type DivisionChip =
-  | DivisionTag
-  | "Buy-On / StarSkate"
-  | "Family / All Ages"
   | "Youth (11-18)"
-  | "50+";
+  | "Family / All Ages"
+  | "StarSkate / Buy-On";
+
+export type DivisionChip = DivisionTag;
 
 /**
  * Evaluates whether a session has an open goalie spot needed.
  * Applies strictly to drop-in hockey sessions (`category === 'hockey_dropin'`).
- * Evaluates true if `session.open_goalie_spots > 0`, or if parsed session notes/title
- * explicitly indicate open goalie roster spots (e.g., "Goalies Needed", "0/2 Goalies", "1/2 Goalies").
+ * Evaluates true if `session.open_goalie_spots > 0`, or regex matches raw title / notes (/goalie(s)?\s*(needed|wanted|\d+\/\d+)/i).
  */
 export function hasGoalieNeeded(session: SessionLike): boolean {
   if (session.category && session.category !== "hockey_dropin") {
@@ -92,6 +87,11 @@ export function hasGoalieNeeded(session: SessionLike): boolean {
   const notes = session.notes || session.description || "";
   const combined = `${title}\n${notes}`;
 
+  // Direct prompt regex: /goalie(s)?\s*(needed|wanted|\d+\/\d+)/i
+  if (/goalie(s)?\s*(needed|wanted|\d+\/\d+)/i.test(combined)) {
+    return true;
+  }
+
   // Explicit text indicators: "Goalies Needed", "Goalie Needed", "Goalie Spots Open", "Need Goalie(s)"
   if (
     /\b(?:goalies?|goaltenders?)\s*(?:needed|wanted|required|spots?\s*(?:open|available)|callout)\b/i.test(combined) ||
@@ -119,7 +119,7 @@ export const goalieNeeded = hasGoalieNeeded;
 
 /**
  * Evaluates whether goalies play free for a hockey drop-in session.
- * Evaluates true if `session.is_goalie_free === true`, goalie cost is $0,
+ * Evaluates true if `session.is_goalie_free === true`, goalie fee is $0,
  * or municipal notes state goalies play free (e.g. Burnaby & Vancouver adult drop-in policies).
  */
 export function isGoalieFree(session: SessionLike): boolean {
@@ -187,7 +187,7 @@ export const goalieFree = isGoalieFree;
 /**
  * Division/Age pill parser:
  * Extracts lightweight tags from `raw_title` / `session_title`:
- * `19+ Adult`, `30+`, `40+`, `50+ Senior`, `Women / Female`, `Youth`, `All Ages`.
+ * `19+ Adult`, `30+`, `40+`, `50+ Senior`, `Women / Female`, `Youth (11-18)`, `Family / All Ages`, `StarSkate / Buy-On`.
  */
 export function parseDivisionChips(input: SessionLike | string): DivisionTag[] {
   const title =
@@ -213,10 +213,14 @@ export function parseDivisionChips(input: SessionLike | string): DivisionTag[] {
     /\b(?:youth|teens?|children|child|kids?|1[1-8]\s*-\s*1[7-8]|under\s*1[89]|u1[1-8])\b/i.test(t) &&
     !/\badult\s*&\s*child\b/i.test(t);
 
-  const isAllAges =
+  const isFamilyOrAllAges =
     /\b(?:all\s*ages|everyone\s*welcome|family|family\s*&\s*child|parent\s*&?\s*(?:tot|child|preschooler)|public\s*skate|leisure\s*skate|community\s*skate|toonie\s*skate|all-ages)\b/i.test(
       t,
     );
+
+  const isBuyOn =
+    (typeof input !== "string" && input.category === "figure_buyon") ||
+    /\b(?:buy[\s-]?on|starskate|star\s*\d|figure\s*skat|freestyle|patch)\b/i.test(t);
 
   const isAdultExplicit =
     /(?:\b(?:18|19)\s*\+|\b(?:18|19)\s*(?:yrs|years|&\s*over|and\s*over)\b|\badults?\b|\bshinny\b)/i.test(
@@ -224,7 +228,7 @@ export function parseDivisionChips(input: SessionLike | string): DivisionTag[] {
     );
 
   const isAdult =
-    (isAdultExplicit && !is30Plus && !is40Plus && !is50Plus && !isAllAges) ||
+    (isAdultExplicit && !is30Plus && !is40Plus && !is50Plus && !isFamilyOrAllAges) ||
     /(?:\b(?:18|19)\s*\+|\b(?:18|19)\s*(?:yrs|years)\b)/i.test(t);
 
   if (isAdult) tags.push("19+ Adult");
@@ -232,8 +236,9 @@ export function parseDivisionChips(input: SessionLike | string): DivisionTag[] {
   if (is40Plus) tags.push("40+");
   if (is50Plus) tags.push("50+ Senior");
   if (isWomen) tags.push("Women / Female");
-  if (isYouth) tags.push("Youth");
-  if (isAllAges) tags.push("All Ages");
+  if (isYouth) tags.push("Youth (11-18)");
+  if (isFamilyOrAllAges) tags.push("Family / All Ages");
+  if (isBuyOn) tags.push("StarSkate / Buy-On");
 
   return tags;
 }

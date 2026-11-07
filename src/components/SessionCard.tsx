@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { track } from "@vercel/analytics";
 import {
   ExternalLink,
   Clock,
@@ -21,6 +20,7 @@ import { extractSessionRequirements, sanitizeSessionNotes } from "@/lib/normaliz
 import { formatTimeRange } from "@/lib/time";
 import { resolveBookingUrl } from "@/lib/links";
 import type { SessionDTO } from "@/lib/queries";
+import { trackOutboundBooking } from "@/lib/analytics";
 import { SessionDetailsModal } from "./SessionDetailsModal";
 import { SpotAlertModal } from "./SpotAlertModal";
 import { ReportIssueModal } from "./ReportIssueModal";
@@ -153,7 +153,14 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
       ? "Register"
       : isReservable
       ? "Book on City Site"
-      : "Session Details";
+      : "Confirm on City Schedule";
+
+  const buttonType: "register" | "book_city_site" | "schedule_fallback" =
+    s.bookingPlatform === "canlan"
+      ? "register"
+      : isReservable
+      ? "book_city_site"
+      : "schedule_fallback";
 
   const destinationUrl = resolveBookingUrl({
     bookingUrl: s.bookingUrl,
@@ -167,14 +174,6 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
     source: s.source,
     rawTitle: s.rawTitle,
   });
-
-  const handleOutboundClick = () => {
-    track("outbound_click", {
-      facility_slug: s.facilitySlug,
-      category: s.category,
-      title: s.rawTitle,
-    });
-  };
 
   return (
     <>
@@ -203,13 +202,20 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 </span>
               ))}
               {s.category === "hockey_dropin" && needsGoalie && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/85 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/40 shadow-xs animate-pulse">
+                <span
+                  role="status"
+                  aria-label="Goalie spot needed"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/80 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 border border-emerald-500/40 shadow-xs animate-pulse"
+                >
                   <span aria-hidden>🥅</span> Goalie Needed
                 </span>
               )}
               {s.category === "hockey_dropin" && isFreeGoalie && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900 border border-emerald-300 shadow-2xs">
-                  <span aria-hidden>🆓</span> Goalie Free
+                <span
+                  aria-label="Goalies play free"
+                  className="inline-flex items-center gap-1 rounded-full bg-teal-950/80 px-2.5 py-0.5 text-[11px] font-bold text-teal-300 border border-teal-500/30 shadow-2xs"
+                >
+                  <span aria-hidden>🆓</span> Goalies Free
                 </span>
               )}
               {isSpecial && (
@@ -346,7 +352,15 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                   href={destinationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={handleOutboundClick}
+                  onClick={() =>
+                    trackOutboundBooking({
+                      facilitySlug: s.facilitySlug,
+                      category: s.category,
+                      municipality: s.municipality,
+                      bookingUrl: destinationUrl,
+                      buttonType: s.bookingPlatform === "canlan" ? "register" : "book_city_site",
+                    })
+                  }
                   className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1 rounded-xl bg-slate-100 px-3 text-xs font-semibold text-slate-800 shadow-sm transition hover:bg-slate-200 focus:outline-none cursor-pointer"
                   title="Open booking site"
                 >
@@ -359,7 +373,15 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
                 href={destinationUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={handleOutboundClick}
+                onClick={() =>
+                  trackOutboundBooking({
+                    facilitySlug: s.facilitySlug,
+                    category: s.category,
+                    municipality: s.municipality,
+                    bookingUrl: destinationUrl,
+                    buttonType,
+                  })
+                }
                 className="inline-flex min-h-[48px] shrink-0 items-center justify-center gap-1.5 rounded-xl bg-ice-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-ice-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 focus-visible:ring-offset-2"
               >
                 {cta}

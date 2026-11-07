@@ -313,13 +313,14 @@ export function IceFinderApp({
         matchesMunicipalityFilter(s.municipality, municipality) &&
         (facility === "all" || s.facilitySlug === facility) &&
         (!openOnly || s.source === "schedule" || s.openSpots > 0) &&
+        (category === "all" || s.category === category) &&
         (hasGoalieNeeded(s) || isGoalieFree(s))
       ) {
         count++;
       }
     }
     return count;
-  }, [indexed, selectedDays, now, municipality, facility, openOnly]);
+  }, [indexed, selectedDays, now, municipality, facility, openOnly, category]);
 
   const visible = useMemo(() => {
     return baseFiltered.filter(({ s }) => {
@@ -548,13 +549,7 @@ export function IceFinderApp({
           ))}
           <button
             type="button"
-            onClick={() => {
-              const next = !goalieOnly;
-              setGoalieOnly(next);
-              if (next && category !== "all" && category !== "hockey_dropin") {
-                setCategory("all");
-              }
-            }}
+            onClick={() => setGoalieOnly(!goalieOnly)}
             aria-pressed={goalieOnly}
             className={`inline-flex min-h-[48px] min-w-[48px] shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 text-sm font-bold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer ${
               goalieOnly
@@ -580,12 +575,7 @@ export function IceFinderApp({
           <Toggle checked={openOnly} onChange={setOpenOnly} label="Open Spots Only" />
           <Toggle
             checked={goalieOnly}
-            onChange={(next) => {
-              setGoalieOnly(next);
-              if (next && category !== "all" && category !== "hockey_dropin") {
-                setCategory("all");
-              }
-            }}
+            onChange={(next) => setGoalieOnly(next)}
             label="Goalies Needed"
             icon={<span aria-hidden>🥅</span>}
           />

@@ -44,6 +44,10 @@ assert(
   "notes with '1/2 Goalies' returns true",
 );
 assert(
+  hasGoalieNeeded({ category: "hockey_dropin", rawTitle: "Adult Drop-in Hockey", notes: "goalies wanted for Friday" }) === true,
+  "notes with 'goalies wanted' returns true via regex",
+);
+assert(
   hasGoalieNeeded({ category: "public_skate", open_goalie_spots: 2, rawTitle: "Public Skate" }) === false,
   "non-hockey category returns false even if spots present",
 );
@@ -95,10 +99,13 @@ const test5 = parseDivisionChips("Britannia Arena - Women+ Hockey 19+");
 assert(test5.includes("Women / Female") && test5.includes("19+ Adult"), "Extracts 'Women / Female' & '19+ Adult'");
 
 const test6 = parseDivisionChips("Youth Stick & Puck (11-18)");
-assert(test6.includes("Youth"), "Extracts 'Youth'");
+assert(test6.includes("Youth (11-18)"), "Extracts 'Youth (11-18)'");
 
 const test7 = parseDivisionChips("Everyone Welcome Skate (All Ages)");
-assert(test7.includes("All Ages"), "Extracts 'All Ages'");
+assert(test7.includes("Family / All Ages"), "Extracts 'Family / All Ages'");
+
+const test8 = parseDivisionChips({ category: "figure_buyon", rawTitle: "StarSkate Buy-On Ice" });
+assert(test8.includes("StarSkate / Buy-On"), "Extracts 'StarSkate / Buy-On'");
 
 console.log(`\nResult: ${failed ? `${failed} failures` : "All tests passed!"}`);
 process.exit(failed ? 1 : 0);
