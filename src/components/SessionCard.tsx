@@ -244,9 +244,9 @@ export function SessionCard({ s, relUpdated }: { s: SessionDTO; relUpdated: stri
               <p className="text-lg font-bold tabular-nums tracking-tight text-slate-900" suppressHydrationWarning>{formatTimeRange(s.startTime, s.endTime)}</p>
             </div>
             <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-medium text-slate-700" title={s.rawTitle}>
-                {s.rawTitle}
-              </p>
+              <h3 className="truncate text-sm font-medium text-slate-700" title={s.rawTitle}>
+                {s.category === "public_skate" ? `Public Skate – ${s.facilityName}` : s.rawTitle}
+              </h3>
               {hasNotesOrReqs && !isWalkIn && (
                 <button
                   type="button"

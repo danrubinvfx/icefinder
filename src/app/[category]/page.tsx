@@ -158,6 +158,7 @@ export default async function CategoryPage({ params }: RouteProps) {
       },
       {
         "@type": "BreadcrumbList",
+        "@id": `https://www.icefinder.ca/${slug}#breadcrumb`,
         itemListElement: [
           {
             "@type": "ListItem",
@@ -168,7 +169,7 @@ export default async function CategoryPage({ params }: RouteProps) {
           {
             "@type": "ListItem",
             position: 2,
-            name: cat.h1,
+            name: cat.title.replace(" | IceFinder", ""),
             item: `https://www.icefinder.ca/${slug}`,
           },
         ],
@@ -220,10 +221,15 @@ export default async function CategoryPage({ params }: RouteProps) {
           </p>
         ) : (
           <ul>
-            {upcomingSessions.map((session) => (
-              <li key={session.id}>
-                <article>
-                  <h3>{session.rawTitle}</h3>
+            {upcomingSessions.map((session) => {
+              const isPublicSkate = session.category === "public_skate";
+              const headingTitle = isPublicSkate
+                ? `Public Skate – ${session.facilityName}`
+                : session.rawTitle;
+              return (
+                <li key={session.id}>
+                  <article>
+                    <h3>{headingTitle}</h3>
                   <p>
                     <strong>Facility:</strong> {session.facilityName}
                     {session.rink ? ` (${session.rink})` : ""} - {session.municipality}
@@ -256,7 +262,8 @@ export default async function CategoryPage({ params }: RouteProps) {
                   )}
                 </article>
               </li>
-            ))}
+            );
+          })}
           </ul>
         )}
       </section>

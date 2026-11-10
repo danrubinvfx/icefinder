@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IceFinderApp } from "@/components/IceFinderApp";
-import { CATEGORY_LABELS, matchesMunicipalityFilter, type Municipality } from "@/lib/domain";
+import { CATEGORY_LABELS, matchesMunicipalityFilter, type Category, type Municipality } from "@/lib/domain";
 import { FACILITY_CONTACTS } from "@/lib/facilities";
 import { getFeed } from "@/lib/queries";
 import { buildSportsEventSchema } from "@/lib/schema";
@@ -33,9 +34,9 @@ interface CityMeta {
 
 const CITY_DETAILS: Record<string, CityMeta> = {
   burnaby: {
-    title: "Burnaby Ice Times, Stick & Puck & Drop-In Schedule | IceFinder",
+    title: "Burnaby Public Skating, Stick & Puck & Drop-In Schedule | IceFinder",
     description:
-      "Real-time drop-in ice schedules for Rosemary Brown, Kensington, Bill Copeland, and Scotia Barn.",
+      "Live Burnaby public skating times, stick & puck, and drop-in hockey for Rosemary Brown, Kensington, and Bill Copeland. Updated every 30 minutes.",
     tab: "Burnaby",
   },
   vancouver: {
@@ -57,9 +58,9 @@ const CITY_DETAILS: Record<string, CityMeta> = {
     tab: "New West",
   },
   richmond: {
-    title: "Richmond Ice Times & Drop-In Hockey Schedule | IceFinder",
+    title: "Richmond Drop-In Hockey & Public Skating Schedules | IceFinder",
     description:
-      "Live drop-in hockey, stick & puck, and public skating schedules for Richmond Ice Centre and Minoru Arenas. Updated every 30 minutes.",
+      "Real-time drop-in hockey, stick & puck, and public skating schedules for Richmond Ice Centre and Minoru Arenas. Live capacity and online registration links.",
     tab: "Richmond",
   },
   coquitlam: {
@@ -108,6 +109,7 @@ export function generateStaticParams() {
 
 interface RouteProps {
   params: Promise<{ municipality: string }>;
+  searchParams?: Promise<{ category?: string; [key: string]: string | string[] | undefined }>;
 }
 
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
@@ -147,8 +149,9 @@ export async function generateMetadata({ params }: RouteProps): Promise<Metadata
   };
 }
 
-export default async function MunicipalityPage({ params }: RouteProps) {
+export default async function MunicipalityPage({ params, searchParams }: RouteProps) {
   const { municipality } = await params;
+  const sp = searchParams ? await searchParams : {};
   const slug = municipality?.toLowerCase();
 
   if (!VALID_MUNICIPALITIES[slug]) {
@@ -251,6 +254,15 @@ export default async function MunicipalityPage({ params }: RouteProps) {
       >
         <h2>{title}</h2>
         <p>{description}</p>
+        {slug === "richmond" && (
+          <p className="text-sm text-muted-foreground mt-1">
+            Looking for adult shinny? Filter directly for{" "}
+            <Link href="/richmond?category=hockey_dropin" className="text-sky-400 underline font-medium">
+              Richmond drop-in hockey
+            </Link>
+            .
+          </p>
+        )}
         <p>
           Upcoming drop-in hockey, stick &amp; puck, figure skating buy-ons, and public skating
           sessions across {cityName} arenas in the next 48 hours:
@@ -275,10 +287,15 @@ export default async function MunicipalityPage({ params }: RouteProps) {
                   slug: sessionWithAliases.facility_slug,
                 };
 
+              const isPublicSkate = session.category === "public_skate";
+              const headingTitle = isPublicSkate
+                ? `Public Skate – ${session.facilityName}`
+                : session.rawTitle;
+
               return (
                 <li key={session.id}>
                   <article>
-                    <h3>{session.rawTitle}</h3>
+                    <h3>{headingTitle}</h3>
                     <p>
                       <strong>Facility:</strong> {session.facilityName}
                       {session.rink ? ` (${session.rink})` : ""}
@@ -356,6 +373,7 @@ export default async function MunicipalityPage({ params }: RouteProps) {
       <IceFinderApp
         initialFeed={feed}
         initialMunicipality={tab}
+        initialCategory={sp.category as Category | undefined}
         seoTitle={title.replace(" | IceFinder", "")}
         seoDescription={description}
       />

@@ -22,6 +22,10 @@ export function Footer() {
           <Link href="/public-skate" className="hover:text-ice-600 underline underline-offset-2 py-1 inline-block">
             Public Skating
           </Link>
+          <span>·</span>
+          <Link href="/richmond?category=hockey_dropin" className="hover:text-ice-600 underline underline-offset-2 py-1 inline-block">
+            Richmond Drop-In Hockey
+          </Link>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-xs text-slate-700 font-medium">
           <span className="text-slate-800 font-bold">Drop-in Ice Schedules:</span>

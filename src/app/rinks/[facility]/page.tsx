@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { IceFinderApp } from "@/components/IceFinderApp";
 import { CATEGORY_LABELS, FACILITIES, municipalityToTab } from "@/lib/domain";
@@ -151,6 +152,7 @@ export default async function RinkPage({ params }: RouteProps) {
       },
       {
         "@type": "BreadcrumbList",
+        "@id": `https://www.icefinder.ca/rinks/${facilitySlug}#breadcrumb`,
         itemListElement: [
           {
             "@type": "ListItem",
@@ -161,8 +163,8 @@ export default async function RinkPage({ params }: RouteProps) {
           {
             "@type": "ListItem",
             position: 2,
-            name: "Rinks",
-            item: "https://www.icefinder.ca/#rinks",
+            name: facilityMunicipality.toLowerCase() === "richmond" ? "Richmond Drop-in Hockey & Skating Schedule" : `${facilityMunicipality} Ice Schedules`,
+            item: `https://www.icefinder.ca/${facilityMunicipality.toLowerCase().replace(/\s+/g, "-")}`,
           },
           {
             "@type": "ListItem",
@@ -205,6 +207,11 @@ export default async function RinkPage({ params }: RouteProps) {
         className="sr-only"
         aria-label={`Upcoming ${contact.name} Ice Sessions and Drop-In Schedule`}
       >
+        {(facilitySlug === "richmond-ice-centre" || facilitySlug === "minoru") && (
+          <p>
+            <Link href="/richmond">← Richmond Drop-in Hockey &amp; Skating Schedule</Link>
+          </p>
+        )}
         <h1>{contact.name}</h1>
         <p>{facilityAddress}</p>
         {sheets !== undefined && <p>{sheets} Ice Sheets</p>}

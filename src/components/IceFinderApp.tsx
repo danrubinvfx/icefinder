@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronDown, MapPin, Snowflake, RefreshCw, SearchX, Building2, Phone, Layers, ExternalLink } from "lucide-react";
+import { CalendarDays, ChevronDown, MapPin, SearchX, Building2, Phone, Layers, ExternalLink } from "lucide-react";
 import {
   CATEGORIES,
   CATEGORY_LABELS,
@@ -18,7 +18,6 @@ import {
   addDaysYmd,
   formatDayHeading,
   formatDayNumber,
-  formatTime,
   localYmd,
   relativeTime,
   shortDow,
@@ -26,6 +25,8 @@ import {
 } from "@/lib/time";
 import { SessionCard, hasGoalieNeeded, isGoalieFree } from "./SessionCard";
 import { Footer } from "./Footer";
+import { Header } from "./Header";
+import { DateFilterRibbon } from "./DateFilterRibbon";
 
 type DateMode = "today" | "tomorrow" | "3days" | "week" | "weekend" | "pick";
 type CategoryFilter = "all" | Category;
@@ -400,106 +401,24 @@ export function IceFinderApp({
   return (
     <div className="mx-auto min-h-dvh max-w-3xl pb-16">
       {/* ── Header ───────────────────────────────────────────── */}
-      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-slate-50/90 backdrop-blur supports-[backdrop-filter]:bg-slate-50/75">
-        <div className="flex h-14 items-center gap-3 px-4">
-          <Link href="/" className="inline-flex min-h-[48px] items-center gap-2" aria-label="IceFinder home">
-            <span className="grid size-9 place-items-center rounded-xl bg-ice-600 text-white shadow-sm ring-1 ring-ice-700/20">
-              <Snowflake className="size-5" aria-hidden />
-            </span>
-            <div className="leading-tight">
-              <span className="text-base font-extrabold tracking-tight text-slate-900">IceFinder</span>
-              <span className="ml-1.5 hidden text-xs font-semibold text-slate-600 min-[420px]:inline">Metro Van</span>
-            </div>
-          </Link>
+      <Header
+        municipality={municipality}
+        onSelectMunicipality={(m) => {
+          setMunicipality(m);
+          setFacility("all");
+        }}
+        municipalityCounts={municipalityCounts}
+        refreshing={refreshing}
+        onRefresh={handleManualRefresh}
+        mounted={mounted}
+        lastSyncAt={lastSyncAt}
+        syncTone={syncTone}
+        toast={toast}
+      />
 
-          {/* Desktop location selector */}
-          <div className="hidden items-center gap-1.5 text-sm sm:flex">
-            <MapPin className="size-4 text-ice-600" aria-hidden />
-            <label className="relative">
-              <span className="sr-only">Municipality</span>
-              <select
-                value={municipality}
-                onChange={(e) => {
-                  setMunicipality(e.target.value as Municipality);
-                  setFacility("all");
-                }}
-                className="appearance-none bg-transparent pr-5 font-semibold text-slate-800 focus:outline-none cursor-pointer"
-              >
-                {MUNICIPALITIES.map((m) => (
-                  <option key={m} value={m}>
-                    {m === "All Metro Van" ? "All Metro Vancouver" : `${m}, BC`}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-4 -translate-y-1/2 text-slate-600" aria-hidden />
-            </label>
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Refresh / sync button */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={handleManualRefresh}
-              disabled={refreshing}
-              title={mounted && lastSyncAt ? `Synced at ${formatTime(lastSyncAt)}` : undefined}
-              aria-label="Refresh feed"
-              className="inline-flex min-h-[48px] min-w-[48px] items-center justify-center gap-2 rounded-full bg-white px-3.5 text-xs font-semibold text-slate-700 shadow-2xs ring-1 ring-slate-200 hover:bg-slate-100 disabled:opacity-60 focus:outline-none focus-visible:ring-2 focus-visible:ring-ice-500 cursor-pointer disabled:cursor-not-allowed"
-            >
-              <span
-                className={`size-2 rounded-full ${
-                  refreshing ? "bg-ice-500 animate-pulse" : syncTone === "fresh" ? "bg-emerald-500" : syncTone === "stale" ? "bg-amber-500" : "bg-slate-500"
-                }`}
-                aria-hidden
-              />
-              <span className="tabular-nums" suppressHydrationWarning>
-                {refreshing ? (
-                  "Checking live ice..."
-                ) : !mounted ? (
-                  <>
-                    <span className="hidden min-[400px]:inline">Live · </span>synced
-                  </>
-                ) : lastSyncAt ? (
-                  <>
-                    <span className="hidden min-[400px]:inline">Live · </span>synced {formatTime(lastSyncAt)}
-                  </>
-                ) : (
-                  "Awaiting first sync"
-                )}
-              </span>
-              <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-ice-600" : ""}`} aria-hidden />
-            </button>
-            {toast && (
-              <div
-                role="status"
-                className="pointer-events-none absolute right-0 top-full mt-1.5 z-30 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white shadow-lg transition-all animate-in fade-in"
-              >
-                {toast}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Municipality Filter Ribbon */}
-        <nav aria-label="Municipality" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
-          {MUNICIPALITIES.map((m) => (
-            <Pill
-              key={m}
-              active={municipality === m}
-              onClick={() => {
-                setMunicipality(m);
-                setFacility("all");
-              }}
-              count={municipalityCounts[m]}
-            >
-              {m}
-            </Pill>
-          ))}
-        </nav>
-
+      <div className="border-b border-slate-200/80 bg-slate-50/90 px-4 pt-2">
         {/* Date / Timeframe pills */}
-        <nav aria-label="Timeframe" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-2">
+        <nav aria-label="Timeframe" className="no-scrollbar flex gap-2 overflow-x-auto pb-2">
           <Pill active={dateMode === "today"} onClick={() => setDateMode("today")}>
             Today
           </Pill>
@@ -538,7 +457,7 @@ export function IceFinderApp({
         </nav>
 
         {/* Category pills */}
-        <nav aria-label="Category" className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 pb-2">
+        <nav aria-label="Category" className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-2">
           <Pill active={category === "all"} onClick={() => setCategory("all")} count={categoryCounts.all}>
             All
           </Pill>
@@ -571,7 +490,7 @@ export function IceFinderApp({
         </nav>
 
         {/* Toggles + facility dropdown */}
-        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto px-4 pb-3">
+        <div className="no-scrollbar flex items-center gap-2 overflow-x-auto pb-3">
           <Toggle checked={openOnly} onChange={setOpenOnly} label="Open Spots Only" />
           <Toggle
             checked={goalieOnly}
@@ -599,13 +518,23 @@ export function IceFinderApp({
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-600" aria-hidden />
           </label>
         </div>
-      </header>
+      </div>
 
       {/* ── Feed ─────────────────────────────────────────────── */}
       <main className="space-y-6 px-4 pt-4">
         {/* SEO Header or Facility Details Header */}
         {facilityInfo ? (
           <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-2xs space-y-4">
+            {(facilityInfo.municipality.toLowerCase() === "richmond" || facility === "richmond-ice-centre" || facility === "minoru") && (
+              <nav aria-label="Breadcrumb" className="mb-2">
+                <Link
+                  href="/richmond"
+                  className="text-xs sm:text-sm font-semibold text-sky-600 hover:text-sky-700 hover:underline inline-flex items-center gap-1"
+                >
+                  ← Richmond Drop-in Hockey & Skating Schedule
+                </Link>
+              </nav>
+            )}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center gap-2">
@@ -668,8 +597,23 @@ export function IceFinderApp({
               {seoDescription ??
                 "Find real-time drop-in hockey, stick & puck, figure skating buy-ons, and public skates across Burnaby, Vancouver, Richmond, Coquitlam & Delta. Check live open spots and register directly."}
             </p>
+            {(municipality === "Richmond" || seoTitle?.toLowerCase().includes("richmond")) && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Looking for adult shinny? Filter directly for{" "}
+                <Link href="/richmond?category=hockey_dropin" className="text-sky-400 underline font-medium">
+                  Richmond drop-in hockey
+                </Link>
+                .
+              </p>
+            )}
           </header>
         )}
+
+        {/* Mobile Sticky Weekend / Quick Filter Ribbon */}
+        <DateFilterRibbon
+          dateMode={dateMode}
+          onSelectDateMode={(mode) => setDateMode(mode)}
+        />
 
         {/* Quick Day-Selector Ribbon for 7-Day / Multi-Day View */}
         {(dateMode === "week" || dateMode === "3days") && selectedDays.length > 1 && (
